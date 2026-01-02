@@ -1,0 +1,52 @@
+{
+  "schema_version": "scamsmart.lesson.v1",
+  "scam_type": "tax_impersonation",
+  "title": "ATO / myGov tax scams (fake recalculation, refunds, threats)",
+  "summary": "Scammers impersonate the ATO or myGov to steal logins or identity details, often using ‘refund’ or ‘urgent notice’ bait.",
+  "how_it_works": [
+    "You receive an email/text claiming your tax has been recalculated or you’re owed money.",
+    "You’re told to click a link to log into myGov or provide TFN/ID documents.",
+    "Scammers use your details for identity theft or to redirect refunds."
+  ],
+  "warning_signs": [
+    "Message asks you to log in via a link or provide TFN/licence/Medicare details.",
+    "Threats about penalties/arrest or urgent deadlines.",
+    "Sender address/domain doesn’t match the real service."
+  ],
+  "example_hooks": [
+    "“Taxable income recalculated — view your new notice.”",
+    "“You are due compensation/refund — reply with your TFN and ID.”"
+  ],
+  "what_to_do": [
+    "Access myGov by typing my.gov.au yourself or using the official app.",
+    "Don’t send identity documents to unexpected requests.",
+    "Report the scam and contact relevant agencies if details were shared."
+  ],
+  "quick_quiz": [
+    {
+      "q": "What’s the safest way to get to the real website?",
+      "choices": [
+        "Click the link in the message",
+        "Type the website address yourself or use the official app",
+        "Reply and ask them for another link"
+      ],
+      "answer_index": 1,
+      "explain": "Scam messages often include links to fake sites. Typing the address yourself (or using the official app) reduces that risk."
+    },
+    {
+      "q": "A message says you must act 'within 24 hours' or you'll lose access. What should you do first?",
+      "choices": [
+        "Panic and pay/enter details",
+        "Stop and verify using official contact details you find yourself",
+        "Forward it to friends to ask"
+      ],
+      "answer_index": 1,
+      "explain": "Urgency is a classic pressure tactic. Verify using trusted contact details."
+    }
+  ],
+  "sources": [
+    "https://www.ato.gov.au/online-services/scams-cyber-safety-and-identity-protection/scam-alerts",
+    "https://my.gov.au/en/about/privacy-and-security/mygov-scams"
+  ],
+  "created_at": "2026-01-01T00:00:00+08:00"
+}

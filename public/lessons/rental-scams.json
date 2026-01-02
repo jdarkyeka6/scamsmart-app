@@ -1,0 +1,52 @@
+{
+  "schema_version": "scamsmart.lesson.v1",
+  "scam_type": "rental_scams",
+  "title": "Rental scams (pay bond/rent before inspection; fake bond emails)",
+  "summary": "Rental scammers advertise properties they don’t own and pressure you to pay bond/rent quickly—sometimes using fake ‘bond confirmation’ emails.",
+  "how_it_works": [
+    "A rental listing looks perfect and the ‘landlord’ is very pushy.",
+    "They won’t allow inspection and ask for bond/rent upfront.",
+    "Some scams use fake emails to ‘confirm’ bond lodgement to keep you paying."
+  ],
+  "warning_signs": [
+    "Excuses for why you can’t inspect the property.",
+    "Requests for bond/rent before viewing/signing properly.",
+    "Emails that imitate government/consumer protection agencies."
+  ],
+  "example_hooks": [
+    "“Pay the bond today to secure it—many applicants.”",
+    "“Here’s your bond confirmation email (fake).”"
+  ],
+  "what_to_do": [
+    "Never pay before inspecting and verifying the property/agent.",
+    "Verify communications come from official domains/contacts.",
+    "If you paid, contact your bank immediately and report."
+  ],
+  "quick_quiz": [
+    {
+      "q": "What’s the safest way to get to the real website?",
+      "choices": [
+        "Click the link in the message",
+        "Type the website address yourself or use the official app",
+        "Reply and ask them for another link"
+      ],
+      "answer_index": 1,
+      "explain": "Scam messages often include links to fake sites. Typing the address yourself (or using the official app) reduces that risk."
+    },
+    {
+      "q": "A message says you must act 'within 24 hours' or you'll lose access. What should you do first?",
+      "choices": [
+        "Panic and pay/enter details",
+        "Stop and verify using official contact details you find yourself",
+        "Forward it to friends to ask"
+      ],
+      "answer_index": 1,
+      "explain": "Urgency is a classic pressure tactic. Verify using trusted contact details."
+    }
+  ],
+  "sources": [
+    "https://www.scamwatch.gov.au/types-of-scams/buying-and-selling-scams",
+    "https://www.wa.gov.au/government/announcements/scammers-impersonating-consumer-protection-rental-rip-offs"
+  ],
+  "created_at": "2026-01-01T00:00:00+08:00"
+}

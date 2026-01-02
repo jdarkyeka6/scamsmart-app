@@ -1,0 +1,52 @@
+{
+  "schema_version": "scamsmart.lesson.v1",
+  "scam_type": "general_red_flags",
+  "title": "General scam red flags (Stop • Check • Protect)",
+  "summary": "Most scams share the same patterns: unexpected contact, pressure/urgency, requests for secrecy, and attempts to make you click/pay fast.",
+  "how_it_works": [
+    "Scammers try to catch you off guard with urgency and emotion.",
+    "They often use links that lead to fake websites designed to steal your information and money.",
+    "They may impersonate trusted organisations to make it feel ‘official’."
+  ],
+  "warning_signs": [
+    "You feel pressured to act quickly.",
+    "You’re asked to click a link or open an attachment unexpectedly.",
+    "They request money, personal info, or secrecy."
+  ],
+  "example_hooks": [
+    "“This is urgent — do it now.”",
+    "“Click here to fix your account.”"
+  ],
+  "what_to_do": [
+    "STOP: Don’t send money or info.",
+    "CHECK: Verify using official contact details you find yourself.",
+    "PROTECT: Report scams and change passwords if exposed."
+  ],
+  "quick_quiz": [
+    {
+      "q": "What’s the safest way to get to the real website?",
+      "choices": [
+        "Click the link in the message",
+        "Type the website address yourself or use the official app",
+        "Reply and ask them for another link"
+      ],
+      "answer_index": 1,
+      "explain": "Scam messages often include links to fake sites. Typing the address yourself (or using the official app) reduces that risk."
+    },
+    {
+      "q": "A message says you must act 'within 24 hours' or you'll lose access. What should you do first?",
+      "choices": [
+        "Panic and pay/enter details",
+        "Stop and verify using official contact details you find yourself",
+        "Forward it to friends to ask"
+      ],
+      "answer_index": 1,
+      "explain": "Urgency is a classic pressure tactic. Verify using trusted contact details."
+    }
+  ],
+  "sources": [
+    "https://www.scamwatch.gov.au/stop-check-protect/help-to-spot-and-avoid-scams",
+    "https://www.scamwatch.gov.au/stop-check-protect/what-to-do-if-youve-been-scammed"
+  ],
+  "created_at": "2026-01-01T00:00:00+08:00"
+}

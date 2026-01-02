@@ -1,0 +1,52 @@
+{
+  "schema_version": "scamsmart.lesson.v1",
+  "scam_type": "phishing",
+  "title": "Phishing (fake login pages and ‘verify your details’)",
+  "summary": "Phishing tricks you into giving away passwords, codes, or personal info by pretending to be a trusted organisation.",
+  "how_it_works": [
+    "A scam message claims there’s a security issue, refund, or required update.",
+    "It pushes you to click a link or open an attachment.",
+    "The link leads to a fake login page that captures your username/password (and sometimes 2FA codes)."
+  ],
+  "warning_signs": [
+    "Link/attachment asks you to log in with your username and password.",
+    "Generic greeting, spelling mistakes, or strange sender address.",
+    "Website address doesn’t match the real organisation."
+  ],
+  "example_hooks": [
+    "“Security alert: verify your account now.”",
+    "“You have an unclaimed rebate — log in to claim.”"
+  ],
+  "what_to_do": [
+    "Do not click links/attachments if you’re unsure.",
+    "Go to the real site by typing the address yourself or using the official app.",
+    "Change passwords if you entered them, and enable 2FA where possible."
+  ],
+  "quick_quiz": [
+    {
+      "q": "What’s the safest way to get to the real website?",
+      "choices": [
+        "Click the link in the message",
+        "Type the website address yourself or use the official app",
+        "Reply and ask them for another link"
+      ],
+      "answer_index": 1,
+      "explain": "Scam messages often include links to fake sites. Typing the address yourself (or using the official app) reduces that risk."
+    },
+    {
+      "q": "A message says you must act 'within 24 hours' or you'll lose access. What should you do first?",
+      "choices": [
+        "Panic and pay/enter details",
+        "Stop and verify using official contact details you find yourself",
+        "Forward it to friends to ask"
+      ],
+      "answer_index": 1,
+      "explain": "Urgency is a classic pressure tactic. Verify using trusted contact details."
+    }
+  ],
+  "sources": [
+    "https://www.scamwatch.gov.au/types-of-scams/phishing-scams",
+    "https://www.scamwatch.gov.au/types-of-scams/email-scams"
+  ],
+  "created_at": "2026-01-01T00:00:00+08:00"
+}

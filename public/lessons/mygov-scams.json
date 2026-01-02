@@ -1,0 +1,51 @@
+{
+  "schema_version": "scamsmart.lesson.v1",
+  "scam_type": "mygov_scams",
+  "title": "myGov scams (fake websites/apps, credential harvesting)",
+  "summary": "Scammers create fake myGov lookalike sites/apps to steal usernames, passwords, PINs, and other details.",
+  "how_it_works": [
+    "You’re sent a link to a ‘myGov’ login page.",
+    "The site/app looks real but is fake.",
+    "Entered details are stolen and used for fraud/identity theft."
+  ],
+  "warning_signs": [
+    "Link in message leads to a login page.",
+    "App/website isn’t the official one.",
+    "Requests for myGov PIN/secret questions/TFN in suspicious contexts."
+  ],
+  "example_hooks": [
+    "“New message in your inbox—log in now.”",
+    "“Your account needs verification—click here.”"
+  ],
+  "what_to_do": [
+    "Access myGov by typing my.gov.au yourself or using the official myGov app.",
+    "Never log in via links you didn’t request.",
+    "Change your password if you entered it on a suspicious page."
+  ],
+  "quick_quiz": [
+    {
+      "q": "What’s the safest way to get to the real website?",
+      "choices": [
+        "Click the link in the message",
+        "Type the website address yourself or use the official app",
+        "Reply and ask them for another link"
+      ],
+      "answer_index": 1,
+      "explain": "Scam messages often include links to fake sites. Typing the address yourself (or using the official app) reduces that risk."
+    },
+    {
+      "q": "A message says you must act 'within 24 hours' or you'll lose access. What should you do first?",
+      "choices": [
+        "Panic and pay/enter details",
+        "Stop and verify using official contact details you find yourself",
+        "Forward it to friends to ask"
+      ],
+      "answer_index": 1,
+      "explain": "Urgency is a classic pressure tactic. Verify using trusted contact details."
+    }
+  ],
+  "sources": [
+    "https://my.gov.au/en/about/privacy-and-security/mygov-scams"
+  ],
+  "created_at": "2026-01-01T00:00:00+08:00"
+}

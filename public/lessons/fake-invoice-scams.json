@@ -1,0 +1,51 @@
+{
+  "schema_version": "scamsmart.lesson.v1",
+  "scam_type": "fake_invoices",
+  "title": "Fake business invoice scams (lookalike logos, ABNs, email spoofing)",
+  "summary": "Scammers copy branding (logos/ABNs) and send invoices that look legit but route payments to them.",
+  "how_it_works": [
+    "Scammer impersonates a real business you dealt with recently.",
+    "They send an invoice email that looks real, often with copied branding.",
+    "Payment details are changed so your money goes to the scammer."
+  ],
+  "warning_signs": [
+    "Invoice arrives unexpectedly or from a slightly different email address.",
+    "BSB/account differs from past invoices.",
+    "Attachment/link feels unusual or rushed."
+  ],
+  "example_hooks": [
+    "“Our bank details have changed—please pay this one to the new account.”",
+    "“See attached invoice—payment due today.”"
+  ],
+  "what_to_do": [
+    "Confirm payment details via a known phone number.",
+    "Don’t rely on email-only changes to bank details.",
+    "Report quickly if you paid."
+  ],
+  "quick_quiz": [
+    {
+      "q": "What’s the safest way to get to the real website?",
+      "choices": [
+        "Click the link in the message",
+        "Type the website address yourself or use the official app",
+        "Reply and ask them for another link"
+      ],
+      "answer_index": 1,
+      "explain": "Scam messages often include links to fake sites. Typing the address yourself (or using the official app) reduces that risk."
+    },
+    {
+      "q": "A message says you must act 'within 24 hours' or you'll lose access. What should you do first?",
+      "choices": [
+        "Panic and pay/enter details",
+        "Stop and verify using official contact details you find yourself",
+        "Forward it to friends to ask"
+      ],
+      "answer_index": 1,
+      "explain": "Urgency is a classic pressure tactic. Verify using trusted contact details."
+    }
+  ],
+  "sources": [
+    "https://www.scamwatch.gov.au/about-us/news-and-alerts/scam-alert-fake-business-invoice-scams"
+  ],
+  "created_at": "2026-01-01T00:00:00+08:00"
+}

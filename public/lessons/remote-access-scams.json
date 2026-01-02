@@ -1,0 +1,52 @@
+{
+  "schema_version": "scamsmart.lesson.v1",
+  "scam_type": "remote_access",
+  "title": "Remote access scams (AnyDesk/TeamViewer ‘tech support’)",
+  "summary": "Remote access scammers convince you to install software so they can control your device and access accounts.",
+  "how_it_works": [
+    "You receive an unexpected call claiming there’s a problem with your device or account.",
+    "They tell you to install remote access/screen-sharing software (e.g., AnyDesk/TeamViewer).",
+    "Once connected, they try to access banking, email, or payments and steal money/info."
+  ],
+  "warning_signs": [
+    "Unexpected call offering to ‘fix’ your computer/phone.",
+    "They insist you install remote access software.",
+    "They ask you to log in to banking while they watch/control your screen."
+  ],
+  "example_hooks": [
+    "“We’re from your bank/ISP — download this app so we can help.”",
+    "“There’s malware on your device; we need remote access right now.”"
+  ],
+  "what_to_do": [
+    "Never install remote access software because a stranger asked.",
+    "If you already did: disconnect internet, uninstall the app, change passwords, and contact your bank.",
+    "Use official support channels you initiate yourself."
+  ],
+  "quick_quiz": [
+    {
+      "q": "What’s the safest way to get to the real website?",
+      "choices": [
+        "Click the link in the message",
+        "Type the website address yourself or use the official app",
+        "Reply and ask them for another link"
+      ],
+      "answer_index": 1,
+      "explain": "Scam messages often include links to fake sites. Typing the address yourself (or using the official app) reduces that risk."
+    },
+    {
+      "q": "A message says you must act 'within 24 hours' or you'll lose access. What should you do first?",
+      "choices": [
+        "Panic and pay/enter details",
+        "Stop and verify using official contact details you find yourself",
+        "Forward it to friends to ask"
+      ],
+      "answer_index": 1,
+      "explain": "Urgency is a classic pressure tactic. Verify using trusted contact details."
+    }
+  ],
+  "sources": [
+    "https://www.scamwatch.gov.au/about-us/news-and-alerts/scam-alert-hang-up-on-remote-access-scammers",
+    "https://www.accc.gov.au/media-release/watch-out-for-scammers-claiming-to-fix-technical-issues-as-losses-spike"
+  ],
+  "created_at": "2026-01-01T00:00:00+08:00"
+}

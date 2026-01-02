@@ -1,0 +1,52 @@
+{
+  "schema_version": "scamsmart.lesson.v1",
+  "scam_type": "marketplace_postage_scams",
+  "title": "Marketplace postage scams (fake AusPost links/QR codes)",
+  "summary": "Scammers pose as buyers on marketplaces and send fake shipping/payment links or QR codes to steal your details.",
+  "how_it_works": [
+    "Scammer contacts you as a ‘buyer’ and suggests a courier/shipping link.",
+    "You’re asked to pay a ‘postage’ fee or enter card details to receive funds.",
+    "Fake site harvests personal/financial information."
+  ],
+  "warning_signs": [
+    "Buyer insists you use a link they send (not the marketplace).",
+    "You’re asked to pay to get paid.",
+    "Link/QR code doesn’t go to the official delivery domain."
+  ],
+  "example_hooks": [
+    "“Use this AusPost link to receive payment.”",
+    "“Scan this QR to arrange courier pickup.”"
+  ],
+  "what_to_do": [
+    "Don’t use shipping/payment links provided by strangers.",
+    "Use official marketplace checkout/shipping options.",
+    "Verify with official carrier apps/sites you open yourself."
+  ],
+  "quick_quiz": [
+    {
+      "q": "What’s the safest way to get to the real website?",
+      "choices": [
+        "Click the link in the message",
+        "Type the website address yourself or use the official app",
+        "Reply and ask them for another link"
+      ],
+      "answer_index": 1,
+      "explain": "Scam messages often include links to fake sites. Typing the address yourself (or using the official app) reduces that risk."
+    },
+    {
+      "q": "A message says you must act 'within 24 hours' or you'll lose access. What should you do first?",
+      "choices": [
+        "Panic and pay/enter details",
+        "Stop and verify using official contact details you find yourself",
+        "Forward it to friends to ask"
+      ],
+      "answer_index": 1,
+      "explain": "Urgency is a classic pressure tactic. Verify using trusted contact details."
+    }
+  ],
+  "sources": [
+    "https://auspost.com.au/about-us/about-our-site/online-security-scams-fraud/scam-alerts",
+    "https://www.accc.gov.au/media-release/keep-this-festive-season-stress-free-with-scam-safety-checks"
+  ],
+  "created_at": "2026-01-01T00:00:00+08:00"
+}

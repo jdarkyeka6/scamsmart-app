@@ -1,0 +1,52 @@
+{
+  "schema_version": "scamsmart.lesson.v1",
+  "scam_type": "romance_scams",
+  "title": "Romance/relationship scams (emotion → money)",
+  "summary": "Romance scammers build trust and feelings, then ask for money, gifts, or personal information — often with dramatic stories.",
+  "how_it_works": [
+    "Scammer contacts you on dating apps/social media and gets close fast.",
+    "They avoid meeting/video calls and keep excuses ready.",
+    "Soon they ask for money, gifts, or financial ‘help’."
+  ],
+  "warning_signs": [
+    "They won’t meet in person or video call.",
+    "They ask for money, gift cards, or crypto.",
+    "They get angry or guilt-trip you if you question them."
+  ],
+  "example_hooks": [
+    "“I need help with an emergency—please send funds.”",
+    "“I can’t video call because of my job/security.”"
+  ],
+  "what_to_do": [
+    "Don’t send money or personal info to someone you’ve only met online.",
+    "Talk to a trusted person if you feel pressured.",
+    "Report profiles to the platform and Scamwatch."
+  ],
+  "quick_quiz": [
+    {
+      "q": "What’s the safest way to get to the real website?",
+      "choices": [
+        "Click the link in the message",
+        "Type the website address yourself or use the official app",
+        "Reply and ask them for another link"
+      ],
+      "answer_index": 1,
+      "explain": "Scam messages often include links to fake sites. Typing the address yourself (or using the official app) reduces that risk."
+    },
+    {
+      "q": "A message says you must act 'within 24 hours' or you'll lose access. What should you do first?",
+      "choices": [
+        "Panic and pay/enter details",
+        "Stop and verify using official contact details you find yourself",
+        "Forward it to friends to ask"
+      ],
+      "answer_index": 1,
+      "explain": "Urgency is a classic pressure tactic. Verify using trusted contact details."
+    }
+  ],
+  "sources": [
+    "https://www.scamwatch.gov.au/types-of-scams/relationship-scams",
+    "https://www.scamwatch.gov.au/stop-check-protect/help-someone-whos-being-scammed/red-flags-checklist-for-family-and-friends"
+  ],
+  "created_at": "2026-01-01T00:00:00+08:00"
+}

@@ -1,0 +1,52 @@
+{
+  "schema_version": "scamsmart.lesson.v1",
+  "scam_type": "recovery_scams",
+  "title": "Recovery scams (fake ‘we can get your money back’)",
+  "summary": "After you’ve been scammed, criminals may target you again by promising to recover your money — for an upfront fee.",
+  "how_it_works": [
+    "You’re contacted by someone claiming they can recover stolen funds.",
+    "They may impersonate authorities or ‘recovery agents’.",
+    "They demand fees, deposits, or personal data — then vanish."
+  ],
+  "warning_signs": [
+    "Upfront fee required to ‘start recovery’.",
+    "Claims of special access or guaranteed recovery.",
+    "Pressure to act quickly and keep it secret."
+  ],
+  "example_hooks": [
+    "“We traced your funds—pay a fee to release them.”",
+    "“We’re investigators; send verification payment.”"
+  ],
+  "what_to_do": [
+    "Be skeptical of unsolicited recovery offers.",
+    "Only use official channels (bank, police, Scamwatch guidance).",
+    "Don’t pay extra money to recover money."
+  ],
+  "quick_quiz": [
+    {
+      "q": "What’s the safest way to get to the real website?",
+      "choices": [
+        "Click the link in the message",
+        "Type the website address yourself or use the official app",
+        "Reply and ask them for another link"
+      ],
+      "answer_index": 1,
+      "explain": "Scam messages often include links to fake sites. Typing the address yourself (or using the official app) reduces that risk."
+    },
+    {
+      "q": "A message says you must act 'within 24 hours' or you'll lose access. What should you do first?",
+      "choices": [
+        "Panic and pay/enter details",
+        "Stop and verify using official contact details you find yourself",
+        "Forward it to friends to ask"
+      ],
+      "answer_index": 1,
+      "explain": "Urgency is a classic pressure tactic. Verify using trusted contact details."
+    }
+  ],
+  "sources": [
+    "https://www.accc.gov.au/media-release/criminals-targeting-victims-of-previous-scams-promising-financial-recovery",
+    "https://www.scamwatch.gov.au/stop-check-protect/what-to-do-if-youve-been-scammed"
+  ],
+  "created_at": "2026-01-01T00:00:00+08:00"
+}

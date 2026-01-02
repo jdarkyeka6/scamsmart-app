@@ -1,0 +1,52 @@
+{
+  "schema_version": "scamsmart.lesson.v1",
+  "scam_type": "delivery_scams",
+  "title": "Delivery & parcel scams (missed delivery / tracking links)",
+  "summary": "Scammers send delivery-themed messages to trick you into clicking links, installing malware, or entering payment details.",
+  "how_it_works": [
+    "You get a ‘missed delivery’ or ‘tracking’ message with a link.",
+    "The link may install malware or lead to a fake website.",
+    "Goal: steal info/money or infect your device."
+  ],
+  "warning_signs": [
+    "Unexpected delivery message when you’re not expecting a parcel.",
+    "Shortened or strange link.",
+    "Asks you to install an app or enter details."
+  ],
+  "example_hooks": [
+    "“Track your parcel here: <link>”",
+    "“Missed delivery—reschedule now.”"
+  ],
+  "what_to_do": [
+    "Don’t click—open the delivery company site/app directly and check.",
+    "Delete suspicious messages and report them.",
+    "If you installed something, run a security scan and change passwords."
+  ],
+  "quick_quiz": [
+    {
+      "q": "What’s the safest way to get to the real website?",
+      "choices": [
+        "Click the link in the message",
+        "Type the website address yourself or use the official app",
+        "Reply and ask them for another link"
+      ],
+      "answer_index": 1,
+      "explain": "Scam messages often include links to fake sites. Typing the address yourself (or using the official app) reduces that risk."
+    },
+    {
+      "q": "A message says you must act 'within 24 hours' or you'll lose access. What should you do first?",
+      "choices": [
+        "Panic and pay/enter details",
+        "Stop and verify using official contact details you find yourself",
+        "Forward it to friends to ask"
+      ],
+      "answer_index": 1,
+      "explain": "Urgency is a classic pressure tactic. Verify using trusted contact details."
+    }
+  ],
+  "sources": [
+    "https://www.scamwatch.gov.au/about-us/news-and-alerts/missed-delivery-call-or-voicemail-flubot-scams",
+    "https://www.scamwatch.gov.au/about-us/news-and-alerts/scam-alert-festive-season-scams"
+  ],
+  "created_at": "2026-01-01T00:00:00+08:00"
+}
