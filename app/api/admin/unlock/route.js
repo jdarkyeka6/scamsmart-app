@@ -26,7 +26,6 @@ export async function POST(req) {
   return res;
 }
 
-// Optional: makes GET show a helpful message instead of 405
 export async function GET() {
   return NextResponse.json({ ok: false, error: "Use POST" }, { status: 405 });
 }
