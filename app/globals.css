@@ -1,109 +1,128 @@
+/* ScamSmart globals.css (clean + simple) */
+
+/* Tailwind */
 @import "tailwindcss";
 
+/* Color tokens */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --bg: #ffffff;
+  --fg: #111827; /* slate-900 */
+  --card: #ffffff;
+  --muted: #6b7280; /* gray-500 */
+  --border: #e5e7eb; /* gray-200 */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
-/* ScamSmart Custom Styles */
-:root {
   --primary: #3b82f6;
   --primary-dark: #2563eb;
+
   --success: #10b981;
   --warning: #f59e0b;
   --danger: #ef4444;
   --premium: #fbbf24;
+
+  --shadow: 0 10px 30px -5px rgba(59, 130, 246, 0.20);
+  --shadow-hover: 0 20px 40px -10px rgba(59, 130, 246, 0.25);
 }
 
-/* Smooth animations */
-button, a, .transition {
-  transition: all 0.2s ease;
-}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1220;
+    --fg: #e5e7eb;
+    --card: #0f172a;
+    --muted: #9ca3af;
+    --border: rgba(255, 255, 255, 0.10);
 
-/* Better shadows */
-.shadow-custom {
-  box-shadow: 0 10px 30px -5px rgba(59, 130, 246, 0.3);
-}
-
-/* Premium badge glow */
-.premium-glow {
-  animation: glow 2s ease-in-out infinite;
-}
-
-@keyframes glow {
-  0%, 100% { 
-    box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
-    transform: scale(1);
-  }
-  50% { 
-    box-shadow: 0 0 30px rgba(251, 191, 36, 0.8);
-    transform: scale(1.02);
+    --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.55);
+    --shadow-hover: 0 24px 50px -16px rgba(0, 0, 0, 0.65);
   }
 }
 
-/* Hover effects */
+/* Base */
+html, body {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji",
+    "Segoe UI Emoji";
+}
+
+/* Nice defaults */
+a, button {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, opacity 0.15s ease;
+}
+
 button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px -10px rgba(0,0,0,0.20);
 }
 
 button:active:not(:disabled) {
   transform: translateY(0);
+  box-shadow: none;
 }
 
-/* Logo styling */
+:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Reusable helpers */
+.shadow-custom {
+  box-shadow: var(--shadow);
+}
+
+.shadow-custom:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+/* Logo */
 .logo-header {
-  width: 50px;
-  height: 50px;
+  width: 48px;
+  height: 48px;
   object-fit: contain;
 }
 
-/* Lesson card hover */
+/* Lesson card */
 .lesson-card {
-  transition: all 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid var(--border);
+  background: var(--card);
 }
 
 .lesson-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 20px 40px -10px rgba(59, 130, 246, 0.3);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
 }
 
-/* Progress bar animation */
+/* Progress */
 .progress-bar {
-  transition: width 0.5s ease;
+  transition: width 0.4s ease;
+}
+
+/* Premium glow (optional) */
+.premium-glow {
+  animation: premiumGlow 2s ease-in-out infinite;
+}
+
+@keyframes premiumGlow {
+  0%, 100% {
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.40);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(251, 191, 36, 0.70);
+    transform: scale(1.01);
+  }
 }
 
 /* Section expand animation */
 .section-content {
-  animation: slideDown 0.3s ease;
+  animation: slideDown 0.25s ease;
 }
 
 @keyframes slideDown {
-  from {
-    opacity: 0;
-    max-height: 0;
-  }
-  to {
-    opacity: 1;
-    max-height: 1000px;
-  }
+  from { opacity: 0; max-height: 0; }
+  to   { opacity: 1; max-height: 1000px; }
 }
