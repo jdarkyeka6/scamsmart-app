@@ -98,7 +98,6 @@ export default function PremiumFeedback() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Get 1 Month FREE Premium</h1>
           <p className="text-gray-600 mb-6">Share your honest feedback to unlock premium features!</p>
 
-          {/* Warning Box */}
           <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6 rounded">
             <p className="text-sm text-yellow-800">
               <strong>⚠️ Please take this seriously.</strong><br/>
@@ -109,7 +108,6 @@ export default function PremiumFeedback() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Full Name */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Full Name *
@@ -118,13 +116,12 @@ export default function PremiumFeedback() {
                 type="text"
                 value={formData.fullName}
                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
                 placeholder="John Smith"
                 required
               />
             </div>
 
-            {/* Email */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Email *
@@ -133,14 +130,13 @@ export default function PremiumFeedback() {
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-900"
                 required
                 disabled
               />
               <p className="text-xs text-gray-500 mt-1">Using your account email</p>
             </div>
 
-            {/* Rating */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 How would you rate ScamSmart so far? *
@@ -164,7 +160,6 @@ export default function PremiumFeedback() {
               <p className="text-xs text-gray-500 mt-1">1 = Poor, 5 = Excellent</p>
             </div>
 
-            {/* Feedback */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Your Honest Feedback *
@@ -172,7 +167,7 @@ export default function PremiumFeedback() {
               <textarea
                 value={formData.feedback}
                 onChange={(e) => setFormData({ ...formData, feedback: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
                 rows={6}
                 placeholder="What do you think of ScamSmart? What can we improve? What do you love? Be honest - we want real feedback!"
                 required
@@ -181,7 +176,6 @@ export default function PremiumFeedback() {
               <p className="text-xs text-gray-500 mt-1">Minimum 20 characters</p>
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={submitting}
