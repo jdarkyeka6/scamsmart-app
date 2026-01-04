@@ -122,7 +122,7 @@ https://scamsmart.click`
       </div>
 
       {/* Native Share (mobile) */}
-      {navigator.share && (
+      {typeof navigator !== 'undefined' && navigator.share && (
         <button
           onClick={shareNative}
           className="w-full mt-3 bg-blue-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
