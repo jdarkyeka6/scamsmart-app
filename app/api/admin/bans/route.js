@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
-import { KEYS } from "@/lib/adminStore";
+import { KEYS } from "../../../lib/adminStore";
 
 function requireAdmin(req) {
   const adminAuth = req.cookies.get("admin_auth")?.value;
