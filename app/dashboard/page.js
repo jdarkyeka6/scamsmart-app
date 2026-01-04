@@ -1,8 +1,10 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
-import { sections, lessonTypes, getLessonId, isLessonUnlocked } from '../lib/sections'
+import { sections } from '../../lib/sections'
+import DarkModeToggle from '../components/DarkModeToggle'
+import ShareProgress from '../components/ShareProgress'
 
 export default function Dashboard() {
   const router = useRouter()
@@ -10,7 +12,6 @@ export default function Dashboard() {
   const [progress, setProgress] = useState(null)
   const [completedLessons, setCompletedLessons] = useState([])
   const [loading, setLoading] = useState(true)
-  const [expandedSections, setExpandedSections] = useState({1: true})
 
   useEffect(() => {
     checkUser()
@@ -18,10 +19,12 @@ export default function Dashboard() {
 
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser()
+    
     if (!user) {
       router.push('/signin')
       return
     }
+
     setUser(user)
     await loadProgress(user.id)
     await loadCompletedLessons(user.id)
@@ -29,33 +32,53 @@ export default function Dashboard() {
 
   const loadProgress = async (userId) => {
     try {
-      let { data: progress } = await supabase
+      const { data, error } = await supabase
         .from('user_progress')
         .select('*')
         .eq('user_id', userId)
         .single()
 
-      if (!progress) {
+      if (error && error.code === 'PGRST116') {
         const { data: newProgress } = await supabase
           .from('user_progress')
-          .insert({
-            user_id: userId,
-            total_xp: 0,
-            lessons_completed: 0,
-            streak_count: 0,
-            last_lesson_date: null,
-            email: user.email
-          })
+          .insert([
+            {
+              user_id: userId,
+              email: user?.email,
+              total_xp: 0,
+              lessons_completed: 0,
+              streak_count: 0,
+              last_activity: new Date().toISOString(),
+              is_premium: false
+            }
+          ])
           .select()
           .single()
         
         setProgress(newProgress)
       } else {
-        setProgress(progress)
+        // Check if premium expired
+        if (data?.premium_until) {
+          const premiumUntil = new Date(data.premium_until)
+          const now = new Date()
+          
+          if (now > premiumUntil && data.is_premium) {
+            // Premium expired, downgrade
+            await supabase
+              .from('user_progress')
+              .update({ is_premium: false })
+              .eq('user_id', userId)
+            
+            data.is_premium = false
+          }
+        }
+        
+        setProgress(data)
       }
+      
+      setLoading(false)
     } catch (error) {
       console.error('Error loading progress:', error)
-    } finally {
       setLoading(false)
     }
   }
@@ -67,9 +90,7 @@ export default function Dashboard() {
         .select('lesson_id')
         .eq('user_id', userId)
       
-      if (data) {
-        setCompletedLessons(data.map(l => l.lesson_id))
-      }
+      setCompletedLessons(data?.map(l => l.lesson_id) || [])
     } catch (error) {
       console.error('Error loading completed lessons:', error)
     }
@@ -80,244 +101,249 @@ export default function Dashboard() {
     router.push('/')
   }
 
-  const toggleSection = (sectionId) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [sectionId]: !prev[sectionId]
-    }))
+  const isLessonCompleted = (lessonId) => {
+    return completedLessons.includes(lessonId)
   }
 
-  const getSectionProgress = (sectionId) => {
-    const sectionLessons = lessonTypes.map(lt => getLessonId(sectionId, lt.num))
-    const completed = sectionLessons.filter(l => completedLessons.includes(l)).length
-    return { completed, total: 5 }
-  }
+  const getLevel = () => Math.floor((progress?.total_xp || 0) / 500) + 1
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">Loading your progress...</p>
+          <p className="text-gray-600 dark:text-gray-400 text-lg">Loading your dashboard...</p>
         </div>
       </div>
     )
   }
 
-  const completionPercentage = Math.round((completedLessons.length / 115) * 100)
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm shadow-sm sticky top-0 z-50 border-b border-gray-100">
+      <header className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm sticky top-0 z-50 border-b border-gray-100 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img src="/logo.png" alt="ScamSmart" className="w-12 h-12 drop-shadow-md" />
               <div>
-                <h1 className="text-2xl font-black text-gray-900">ScamSmart</h1>
-                <p className="text-xs text-gray-500">Think Before You Click</p>
+                <h1 className="text-2xl font-black text-gray-900 dark:text-white">ScamSmart</h1>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Think Before You Click</p>
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
-              {!progress?.is_premium && (
-                <button
-                  onClick={() => router.push('/premium-feedback')}
-                  className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-white px-5 py-2.5 rounded-full font-bold hover:from-yellow-500 hover:to-yellow-600 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex items-center gap-2"
-                >
-                  <span className="text-lg">⭐</span>
-                  <span>Get Premium FREE</span>
-                </button>
-              )}
-              {progress?.is_premium && (
-                <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-white px-4 py-2 rounded-full font-bold shadow-md flex items-center gap-2">
-                  <span>⭐</span>
-                  <span>Premium</span>
+            <div className="flex items-center gap-4">
+              <DarkModeToggle />
+              
+              {/* Stats */}
+              <div className="hidden md:flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-1">
+                  <span className="font-bold text-blue-600 dark:text-blue-400">{progress?.total_xp || 0}</span>
+                  <span className="text-gray-600 dark:text-gray-400">XP</span>
                 </div>
-              )}
-              <button 
-                onClick={handleSignOut}
-                className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
-              >
-                Sign Out
-              </button>
+                <div className="flex items-center gap-1">
+                  <span className="font-bold text-orange-600 dark:text-orange-400">{progress?.streak_count || 0}</span>
+                  <span>🔥</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="font-bold text-purple-600 dark:text-purple-400">Lvl {getLevel()}</span>
+                </div>
+              </div>
+
+              {/* Navigation */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => router.push('/chat')}
+                  className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
+                >
+                  Chat
+                </button>
+                <button
+                  onClick={() => router.push('/daily-challenge')}
+                  className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
+                >
+                  Daily
+                </button>
+                <button
+                  onClick={() => router.push('/leaderboard')}
+                  className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
+                >
+                  Leaderboard
+                </button>
+                <button
+                  onClick={() => router.push('/achievements')}
+                  className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
+                >
+                  Achievements
+                </button>
+                <button
+                  onClick={() => router.push('/certificates')}
+                  className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
+                >
+                  Certificates
+                </button>
+                <button
+                  onClick={() => router.push('/referrals')}
+                  className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
+                >
+                  Refer
+                </button>
+                <button
+                  onClick={() => router.push('/profile')}
+                  className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
+                >
+                  Profile
+                </button>
+                <button
+                  onClick={() => router.push('/settings')}
+                  className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
+                >
+                  Settings
+                </button>
+                <button 
+                  onClick={handleSignOut}
+                  className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
             </div>
-          </div>
-          
-          {/* Navigation Tabs */}
-          <div className="flex gap-2 border-t border-gray-100 pt-3 overflow-x-auto pb-1">
-            <NavTab active onClick={() => {}}>📚 Learn</NavTab>
-            <NavTab onClick={() => router.push('/profile')}>👤 Profile</NavTab>
-            <NavTab onClick={() => router.push('/leaderboard')}>🏆 Leaderboard</NavTab>
-            <NavTab onClick={() => router.push('/settings')}>⚙️ Settings</NavTab>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Stats Cards */}
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-2">
+            Welcome back, {user?.email?.split('@')[0] || 'Learner'}! 👋
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">Ready to continue your scam detection journey?</p>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <QuickAction
+            icon="🎯"
+            label="Daily Challenge"
+            onClick={() => router.push('/daily-challenge')}
+          />
+          <QuickAction
+            icon="🎁"
+            label="Refer Friends"
+            onClick={() => router.push('/referrals')}
+          />
+          <QuickAction
+            icon="🎓"
+            label="Certificates"
+            onClick={() => router.push('/certificates')}
+          />
+          <QuickAction
+            icon="💬"
+            label="Chat with Mibo"
+            onClick={() => router.push('/chat')}
+          />
+        </div>
+
+        {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <StatCard 
-            icon="⭐" 
-            label="Total XP" 
-            value={progress?.total_xp || 0}
-            color="blue"
-          />
-          <StatCard 
-            icon="📚" 
-            label="Lessons" 
-            value={`${completedLessons.length}/115`}
-            subtext={`${completionPercentage}% complete`}
-            color="green"
-          />
-          <StatCard 
-            icon="🔥" 
-            label="Streak" 
-            value={`${progress?.streak_count || 0} days`}
-            color="orange"
-          />
-          <StatCard 
-            icon="🎯" 
-            label="Level" 
-            value={Math.floor((progress?.total_xp || 0) / 500) + 1}
-            color="purple"
-          />
+          <StatCard icon="⭐" label="Total XP" value={progress?.total_xp || 0} color="blue" />
+          <StatCard icon="📚" label="Lessons Completed" value={progress?.lessons_completed || 0} color="green" />
+          <StatCard icon="🔥" label="Day Streak" value={progress?.streak_count || 0} color="orange" />
+          <StatCard icon="🏆" label="Level" value={getLevel()} color="purple" />
         </div>
 
-        {/* Progress Bar */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 mb-8 border border-gray-100">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-gray-900">Overall Progress</h3>
-            <span className="text-sm font-semibold text-blue-600">{completionPercentage}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
-            <div 
-              className="bg-gradient-to-r from-blue-500 to-purple-600 h-4 rounded-full transition-all duration-500 ease-out"
-              style={{width: `${completionPercentage}%`}}
-            ></div>
-          </div>
+        {/* Share Progress */}
+        <div className="mb-8">
+          <ShareProgress progress={progress} userEmail={user?.email} />
         </div>
 
-        {/* Mibo Welcome */}
-        <div className="bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 rounded-2xl shadow-sm p-6 mb-8 flex items-center gap-4 border border-blue-200">
-          <img src="/logo.png" alt="Mibo" className="w-16 h-16 drop-shadow-lg" />
-          <div className="flex-1">
-            <h2 className="text-xl font-black text-gray-900 mb-1">Hey there! 👋</h2>
-            <p className="text-gray-700">I'm Mibo, your AI scam detective. Complete lessons in order to unlock new sections and level up your protection skills!</p>
+        {/* Premium CTA */}
+        {!progress?.is_premium && (
+          <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-2xl p-6 mb-8 shadow-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-2xl font-black text-white mb-2">⭐ Upgrade to Premium</h3>
+                <p className="text-white/90 mb-4">
+                  Unlock advanced lessons, priority support, and exclusive features for just $5/month!
+                </p>
+                <button
+                  onClick={() => router.push('/premium')}
+                  className="bg-white text-yellow-600 px-6 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors shadow-md"
+                >
+                  Upgrade Now →
+                </button>
+              </div>
+              <div className="hidden md:block text-8xl">🌟</div>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Premium Active */}
+        {progress?.is_premium && progress?.premium_until && (
+          <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-2xl p-6 mb-8 shadow-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-2xl font-black text-white mb-2">⭐ Premium Active</h3>
+                <p className="text-white/90">
+                  Your premium access is active until {new Date(progress.premium_until).toLocaleDateString()}
+                </p>
+              </div>
+              <div className="hidden md:block text-8xl">🌟</div>
+            </div>
+          </div>
+        )}
 
         {/* Sections */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-black text-gray-900 mb-4">Learning Path</h2>
-          
-          {sections.map((section) => {
-            const { completed, total } = getSectionProgress(section.id)
-            const isExpanded = expandedSections[section.id]
-            const sectionUnlocked = section.id === 1 || completedLessons.includes(getLessonId(section.id - 1, 5))
-            const isComplete = completed === total
-
-            return (
-              <div 
-                key={section.id} 
-                className={`bg-white rounded-2xl shadow-sm overflow-hidden border transition-all ${
-                  sectionUnlocked ? 'border-gray-200 hover:shadow-md' : 'border-gray-100 opacity-60'
-                }`}
-              >
+        <div>
+          <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-6">Learning Paths</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sections.map((section) => {
+              const completed = isLessonCompleted(section.id)
+              
+              return (
                 <button
-                  onClick={() => sectionUnlocked && toggleSection(section.id)}
-                  className={`w-full p-6 flex items-center justify-between ${
-                    sectionUnlocked ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed'
-                  } transition-colors`}
-                  disabled={!sectionUnlocked}
+                  key={section.id}
+                  onClick={() => router.push(`/lesson/${section.id}`)}
+                  className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border-2 transition-all hover:scale-105 hover:shadow-xl text-left ${
+                    completed 
+                      ? 'border-green-400 dark:border-green-600' 
+                      : 'border-gray-100 dark:border-gray-700'
+                  }`}
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="text-5xl">{section.emoji}</div>
-                    <div className="text-left">
-                      <h3 className="text-lg font-bold text-gray-900">
-                        {section.id}. {section.title}
-                      </h3>
-                      <div className="flex items-center gap-3 mt-1">
-                        <span className="text-sm text-gray-600">{completed}/{total} completed</span>
-                        {!sectionUnlocked && <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">🔒 Locked</span>}
-                        {isComplete && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ Complete</span>}
-                      </div>
-                    </div>
+                  <div className="flex items-start justify-between mb-4">
+                    <span className="text-5xl">{section.emoji}</span>
+                    {completed && (
+                      <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                        ✓ Complete
+                      </span>
+                    )}
                   </div>
-                  {sectionUnlocked && (
-                    <span className="text-gray-400 text-xl">{isExpanded ? '▼' : '▶'}</span>
-                  )}
+                  
+                  <h4 className="text-xl font-black text-gray-900 dark:text-white mb-2">
+                    {section.title}
+                  </h4>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+                    {section.description}
+                  </p>
+                  
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500 dark:text-gray-400">Lesson {section.id}</span>
+                    <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                      {completed ? 'Review →' : 'Start →'}
+                    </span>
+                  </div>
                 </button>
-
-                {isExpanded && sectionUnlocked && (
-                  <div className="border-t border-gray-100 p-5 bg-gray-50">
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                      {lessonTypes.map((lessonType) => {
-                        const lessonId = getLessonId(section.id, lessonType.num)
-                        const isCompleted = completedLessons.includes(lessonId)
-                        const isUnlocked = isLessonUnlocked(lessonId, completedLessons)
-
-                        return (
-                          <div key={lessonType.num} className="space-y-2">
-                            <button
-                              onClick={() => isUnlocked && router.push(`/lesson/${lessonId}`)}
-                              disabled={!isUnlocked}
-                              className={`w-full p-4 rounded-xl text-left transition-all ${
-                                isCompleted
-                                  ? 'bg-green-50 border-2 border-green-400 shadow-sm'
-                                  : isUnlocked
-                                    ? 'bg-white border-2 border-blue-400 hover:border-blue-500 hover:shadow-md cursor-pointer'
-                                    : 'bg-gray-100 border-2 border-gray-200 opacity-50 cursor-not-allowed'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="font-black text-gray-900">{section.id}.{lessonType.num}</span>
-                                {isCompleted && <span className="text-green-600 text-lg">✓</span>}
-                                {!isUnlocked && <span className="text-gray-400">🔒</span>}
-                              </div>
-                              <p className="text-sm font-semibold text-gray-700">{lessonType.title}</p>
-                            </button>
-                            
-                            {isCompleted && progress?.is_premium && (
-                              <button
-                                onClick={() => router.push(`/lesson/${lessonId}?review=true`)}
-                                className="w-full bg-purple-100 border-2 border-purple-400 text-purple-700 py-2 px-3 rounded-xl text-sm font-bold hover:bg-purple-200 transition-all"
-                              >
-                                🔄 Review
-                              </button>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
       </main>
     </div>
   )
 }
 
-function NavTab({ active, onClick, children }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-4 py-2 rounded-lg font-semibold transition-all whitespace-nowrap ${
-        active 
-          ? 'bg-blue-600 text-white shadow-sm' 
-          : 'bg-white text-gray-700 hover:bg-gray-100'
-      }`}
-    >
-      {children}
-    </button>
-  )
-}
-
-function StatCard({ icon, label, value, subtext, color }) {
+function StatCard({ icon, label, value, color }) {
   const colorClasses = {
     blue: 'from-blue-500 to-blue-600',
     green: 'from-green-500 to-green-600',
@@ -326,14 +352,25 @@ function StatCard({ icon, label, value, subtext, color }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-3">
         <span className="text-3xl">{icon}</span>
         <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${colorClasses[color]}`}></div>
       </div>
-      <p className="text-sm font-semibold text-gray-600 mb-1">{label}</p>
-      <p className="text-3xl font-black text-gray-900">{value}</p>
-      {subtext && <p className="text-xs text-gray-500 mt-1">{subtext}</p>}
+      <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">{label}</p>
+      <p className="text-3xl font-black text-gray-900 dark:text-white">{value}</p>
     </div>
+  )
+}
+
+function QuickAction({ icon, label, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md hover:scale-105 transition-all text-center"
+    >
+      <div className="text-4xl mb-2">{icon}</div>
+      <p className="text-sm font-semibold text-gray-900 dark:text-white">{label}</p>
+    </button>
   )
 }
