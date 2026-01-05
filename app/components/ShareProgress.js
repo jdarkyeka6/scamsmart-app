@@ -1,137 +1,107 @@
-"use client";
+'use client'
+import { useState } from 'react'
 
-import React, { useMemo, useState } from "react";
+export default function ShareProgress({ progress, userEmail }) {
+  const [copied, setCopied] = useState(false)
 
-/**
- * ShareProgress
- *
- * Props (optional):
- * - title: share title
- * - text: share message
- * - url: share URL (defaults to current page)
- * - stats: { streak, xp, level, rank, solved } (optional - used to build message)
- */
-export default function ShareProgress({
-  title = "ScamSmart Progress",
-  text,
-  url,
-  stats,
-  className = "",
-}) {
-  const [copied, setCopied] = useState(false);
-  const [error, setError] = useState("");
+  const getLevel = () => Math.floor((progress?.total_xp || 0) / 500) + 1
 
-  const shareUrl = useMemo(() => {
-    if (url) return url;
-    if (typeof window === "undefined") return "https://scamsmart.click";
-    return window.location.href || "https://scamsmart.click";
-  }, [url]);
+  const shareText = `🛡️ I'm Level ${getLevel()} on ScamSmart!
+📚 ${progress?.lessons_completed || 0} lessons completed
+⭐ ${progress?.total_xp || 0} XP earned
+🔥 ${progress?.streak_count || 0} day streak
 
-  const shareText = useMemo(() => {
-    if (text) return text;
+Think Before You Click! 🚀
+https://scamsmart.click`
 
-    // Build a friendly default message from stats if provided
-    const bits = [];
-    if (stats?.level != null) bits.push(`Level ${stats.level}`);
-    if (stats?.xp != null) bits.push(`${stats.xp} XP`);
-    if (stats?.streak != null) bits.push(`${stats.streak} day streak`);
-    if (stats?.solved != null) bits.push(`${stats.solved} questions completed`);
-    if (stats?.rank != null) bits.push(`Rank #${stats.rank}`);
-
-    const extra = bits.length ? ` (${bits.join(" • ")})` : "";
-    return `I’m learning to spot scams with ScamSmart${extra}. Think before you click 🛡️`;
-  }, [text, stats]);
-
-  async function doShare() {
-    setError("");
-
-    // Try native share first
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({
-          title,
-          text: shareText,
-          url: shareUrl,
-        });
-        return;
-      } catch (e) {
-        // user cancelled is fine; only show real errors
-        const msg = String(e?.message || "");
-        if (!msg.toLowerCase().includes("abort")) {
-          setError("Couldn’t open share sheet. Try copying the link instead.");
-        }
-      }
-    }
-
-    // Fallback: copy to clipboard
-    try {
-      await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch (e) {
-      setError("Copy failed. You can manually copy the URL from the address bar.");
-    }
+  const shareToTwitter = () => {
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`
+    window.open(url, '_blank', 'width=550,height=420')
   }
 
-  const twitterIntent = useMemo(() => {
-    const t = encodeURIComponent(`${shareText} ${shareUrl}`);
-    return `https://twitter.com/intent/tweet?text=${t}`;
-  }, [shareText, shareUrl]);
+  const shareToFacebook = () => {
+    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent('https://scamsmart.click')}&quote=${encodeURIComponent(shareText)}`
+    window.open(url, '_blank', 'width=550,height=420')
+  }
 
-  const facebookShare = useMemo(() => {
-    const u = encodeURIComponent(shareUrl);
-    return `https://www.facebook.com/sharer/sharer.php?u=${u}`;
-  }, [shareUrl]);
+  const shareToLinkedIn = () => {
+    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://scamsmart.click')}`
+    window.open(url, '_blank', 'width=550,height=420')
+  }
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(shareText)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
-    <div className={`rounded-2xl border border-white/10 bg-white/5 p-4 ${className}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-base font-semibold">Share your progress</div>
-          <div className="text-sm opacity-80 mt-1">
-            Challenge a friend to beat your streak 💪
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
+      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">📢 Share Your Progress</h3>
+      
+      <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl p-6 text-white mb-6">
+        <div className="flex items-center gap-3 mb-4">
+          <img src="/logo.png" alt="ScamSmart" className="w-12 h-12 rounded-lg" />
+          <div>
+            <h4 className="font-black text-lg">ScamSmart</h4>
+            <p className="text-xs opacity-90">Think Before You Click</p>
           </div>
         </div>
+        
+        <div className="space-y-2 mb-4">
+          <p className="text-2xl font-black">Level {getLevel()} 🏆</p>
+          <div className="grid grid-cols-3 gap-2 text-sm">
+            <div>
+              <p className="opacity-90">Lessons</p>
+              <p className="font-bold text-lg">{progress?.lessons_completed || 0}</p>
+            </div>
+            <div>
+              <p className="opacity-90">XP</p>
+              <p className="font-bold text-lg">{progress?.total_xp || 0}</p>
+            </div>
+            <div>
+              <p className="opacity-90">Streak</p>
+              <p className="font-bold text-lg">{progress?.streak_count || 0}🔥</p>
+            </div>
+          </div>
+        </div>
+        
+        <p className="text-xs opacity-75">scamsmart.click</p>
+      </div>
 
+      <div className="grid grid-cols-2 gap-3">
         <button
-          type="button"
-          onClick={doShare}
-          className="rounded-xl px-3 py-2 border border-white/10 bg-white/5 hover:bg-white/10 active:scale-[0.98] transition text-sm"
+          onClick={shareToTwitter}
+          className="flex items-center justify-center gap-2 bg-[#1DA1F2] text-white px-4 py-3 rounded-lg font-semibold hover:bg-[#1a8cd8] transition-colors"
         >
-          {copied ? "✅ Copied!" : "📣 Share"}
+          <span className="text-xl">𝕏</span>
+          Twitter
+        </button>
+        
+        <button
+          onClick={shareToFacebook}
+          className="flex items-center justify-center gap-2 bg-[#1877F2] text-white px-4 py-3 rounded-lg font-semibold hover:bg-[#1664d8] transition-colors"
+        >
+          <span className="text-xl">f</span>
+          Facebook
+        </button>
+        
+        <button
+          onClick={shareToLinkedIn}
+          className="flex items-center justify-center gap-2 bg-[#0A66C2] text-white px-4 py-3 rounded-lg font-semibold hover:bg-[#094d92] transition-colors"
+        >
+          <span className="text-xl">in</span>
+          LinkedIn
+        </button>
+        
+        <button
+          onClick={copyToClipboard}
+          className="flex items-center justify-center gap-2 bg-gray-600 dark:bg-gray-700 text-white px-4 py-3 rounded-lg font-semibold hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
+        >
+          <span className="text-xl">{copied ? '✓' : '📋'}</span>
+          {copied ? 'Copied!' : 'Copy'}
         </button>
       </div>
-
-      <div className="mt-3 text-sm opacity-80 whitespace-pre-line">
-        {shareText}
-        {"\n"}
-        <span className="opacity-90">{shareUrl}</span>
-      </div>
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        <a
-          href={twitterIntent}
-          target="_blank"
-          rel="noreferrer"
-          className="rounded-xl px-3 py-2 border border-white/10 bg-white/5 hover:bg-white/10 text-sm"
-        >
-          Share on X
-        </a>
-        <a
-          href={facebookShare}
-          target="_blank"
-          rel="noreferrer"
-          className="rounded-xl px-3 py-2 border border-white/10 bg-white/5 hover:bg-white/10 text-sm"
-        >
-          Share on Facebook
-        </a>
-      </div>
-
-      {error ? (
-        <div className="mt-3 text-sm text-red-300">
-          {error}
-        </div>
-      ) : null}
     </div>
-  );
+  )
 }
