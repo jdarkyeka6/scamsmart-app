@@ -1,34 +1,36 @@
-'use client'
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '../../lib/supabase'
-import { sections } from '../../lib/sections'
-import DarkModeToggle from '../components/DarkModeToggle'
-import ShareProgress from '../components/ShareProgress'
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '../../lib/supabase';
+import { sections } from '../../lib/sections';
+import DarkModeToggle from '../components/DarkModeToggle';
+import ShareProgress from '../components/ShareProgress';
 
 export default function Dashboard() {
-  const router = useRouter()
-  const [user, setUser] = useState(null)
-  const [progress, setProgress] = useState(null)
-  const [completedLessons, setCompletedLessons] = useState([])
-  const [loading, setLoading] = useState(true)
+  const router = useRouter();
+  const [user, setUser] = useState(null);
+  const [progress, setProgress] = useState(null);
+  const [completedLessons, setCompletedLessons] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkUser()
-  }, [])
+    checkUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    
+    const { data: { user } } = await supabase.auth.getUser();
+
     if (!user) {
-      router.push('/signin')
-      return
+      router.push('/signin');
+      return;
     }
 
-    setUser(user)
-    await loadProgress(user.id)
-    await loadCompletedLessons(user.id)
-  }
+    setUser(user);
+    await loadProgress(user.id);
+    await loadCompletedLessons(user.id);
+  };
 
   const loadProgress = async (userId) => {
     try {
@@ -36,7 +38,7 @@ export default function Dashboard() {
         .from('user_progress')
         .select('*')
         .eq('user_id', userId)
-        .single()
+        .single();
 
       if (error && error.code === 'PGRST116') {
         const { data: newProgress } = await supabase
@@ -53,59 +55,59 @@ export default function Dashboard() {
             }
           ])
           .select()
-          .single()
-        
-        setProgress(newProgress)
+          .single();
+
+        setProgress(newProgress);
       } else {
         // Check if premium expired
         if (data?.premium_until) {
-          const premiumUntil = new Date(data.premium_until)
-          const now = new Date()
-          
+          const premiumUntil = new Date(data.premium_until);
+          const now = new Date();
+
           if (now > premiumUntil && data.is_premium) {
             // Premium expired, downgrade
             await supabase
               .from('user_progress')
               .update({ is_premium: false })
-              .eq('user_id', userId)
-            
-            data.is_premium = false
+              .eq('user_id', userId);
+
+            data.is_premium = false;
           }
         }
-        
-        setProgress(data)
+
+        setProgress(data);
       }
-      
-      setLoading(false)
+
+      setLoading(false);
     } catch (error) {
-      console.error('Error loading progress:', error)
-      setLoading(false)
+      console.error('Error loading progress:', error);
+      setLoading(false);
     }
-  }
+  };
 
   const loadCompletedLessons = async (userId) => {
     try {
       const { data } = await supabase
         .from('lesson_completions')
         .select('lesson_id')
-        .eq('user_id', userId)
-      
-      setCompletedLessons(data?.map(l => l.lesson_id) || [])
+        .eq('user_id', userId);
+
+      setCompletedLessons(data?.map(l => l.lesson_id) || []);
     } catch (error) {
-      console.error('Error loading completed lessons:', error)
+      console.error('Error loading completed lessons:', error);
     }
-  }
+  };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
-  }
+    await supabase.auth.signOut();
+    router.push('/');
+  };
 
   const isLessonCompleted = (lessonId) => {
-    return completedLessons.includes(lessonId)
-  }
+    return completedLessons.includes(lessonId);
+  };
 
-  const getLevel = () => Math.floor((progress?.total_xp || 0) / 500) + 1
+  const getLevel = () => Math.floor((progress?.total_xp || 0) / 500) + 1;
 
   if (loading) {
     return (
@@ -115,7 +117,7 @@ export default function Dashboard() {
           <p className="text-gray-600 dark:text-gray-400 text-lg">Loading your dashboard...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -131,10 +133,10 @@ export default function Dashboard() {
                 <p className="text-xs text-gray-500 dark:text-gray-400">Think Before You Click</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-4">
               <DarkModeToggle />
-              
+
               {/* Stats */}
               <div className="hidden md:flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-1">
@@ -200,7 +202,7 @@ export default function Dashboard() {
                 >
                   Settings
                 </button>
-                <button 
+                <button
                   onClick={handleSignOut}
                   className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
                 >
@@ -271,7 +273,7 @@ export default function Dashboard() {
                   onClick={() => router.push('/premium')}
                   className="bg-white text-yellow-600 px-6 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors shadow-md"
                 >
-                  Upgrade Now →
+                  Upgrade Now → 
                 </button>
               </div>
               <div className="hidden md:block text-8xl">🌟</div>
@@ -299,15 +301,15 @@ export default function Dashboard() {
           <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-6">Learning Paths</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sections.map((section) => {
-              const completed = isLessonCompleted(section.id)
-              
+              const completed = isLessonCompleted(section.id);
+
               return (
                 <button
                   key={section.id}
                   onClick={() => router.push(`/lesson/${section.id}`)}
                   className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border-2 transition-all hover:scale-105 hover:shadow-xl text-left ${
-                    completed 
-                      ? 'border-green-400 dark:border-green-600' 
+                    completed
+                      ? 'border-green-400 dark:border-green-600'
                       : 'border-gray-100 dark:border-gray-700'
                   }`}
                 >
@@ -319,14 +321,14 @@ export default function Dashboard() {
                       </span>
                     )}
                   </div>
-                  
+
                   <h4 className="text-xl font-black text-gray-900 dark:text-white mb-2">
                     {section.title}
                   </h4>
                   <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
                     {section.description}
                   </p>
-                  
+
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-500 dark:text-gray-400">Lesson {section.id}</span>
                     <span className="text-blue-600 dark:text-blue-400 font-semibold">
@@ -334,13 +336,13 @@ export default function Dashboard() {
                     </span>
                   </div>
                 </button>
-              )
+              );
             })}
           </div>
         </div>
       </main>
     </div>
-  )
+  );
 }
 
 function StatCard({ icon, label, value, color }) {
@@ -349,7 +351,7 @@ function StatCard({ icon, label, value, color }) {
     green: 'from-green-500 to-green-600',
     orange: 'from-orange-500 to-orange-600',
     purple: 'from-purple-500 to-purple-600'
-  }
+  };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
@@ -360,7 +362,7 @@ function StatCard({ icon, label, value, color }) {
       <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">{label}</p>
       <p className="text-3xl font-black text-gray-900 dark:text-white">{value}</p>
     </div>
-  )
+  );
 }
 
 function QuickAction({ icon, label, onClick }) {
@@ -372,5 +374,5 @@ function QuickAction({ icon, label, onClick }) {
       <div className="text-4xl mb-2">{icon}</div>
       <p className="text-sm font-semibold text-gray-900 dark:text-white">{label}</p>
     </button>
-  )
+  );
 }
