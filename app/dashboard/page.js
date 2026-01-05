@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import { sections } from '../../lib/sections';
-import DarkModeToggle from '../components/DarkModeToggle';
+import DarkModeToggle from '../components/Dark-Mode-Toggle';
 import ShareProgress from '../components/ShareProgress';
 
 export default function Dashboard() {

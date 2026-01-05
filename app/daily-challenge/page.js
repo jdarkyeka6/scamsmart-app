@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
-import DarkModeToggle from '../components/DarkModeToggle'
+import DarkModeToggle from '../components/Dark-Mode-Toggle'
 
 // Daily challenges rotate based on day of year
 const DAILY_CHALLENGES = [
