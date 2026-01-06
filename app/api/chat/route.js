@@ -1,33 +1,90 @@
-// app/api/chat/route.js
-import { NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk'; // Or OpenAI
+import { NextResponse } from 'next/server'
+import Anthropic from '@anthropic-ai/sdk'
+import { supabase } from '../../../lib/supabase'
 
-// Initialize AI (Make sure ANTHROPIC_API_KEY is in your Vercel Environment Variables)
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
-});
+})
 
-export async function POST(req) {
+function utcDayString() {
+  const now = new Date()
+  const y = now.getUTCFullYear()
+  const m = String(now.getUTCMonth() + 1).padStart(2, '0')
+  const d = String(now.getUTCDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+export async function POST(request) {
   try {
-    const { messages } = await req.json();
+    const { message, context } = await request.json()
 
-    // --- REMOVED THE LIMIT CHECK HERE --- 
-    // If you had code here checking database counts, I have deleted it.
-    
-    // Send to AI
+    // Get current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+    }
+
+    const userId = user.id
+    const day = utcDayString()
+
+    // Check if user is premium
+    const { data: progress } = await supabase
+      .from('user_progress')
+      .select('is_premium')
+      .eq('user_id', userId)
+      .single()
+
+    const isPremium = progress?.is_premium || false
+
+    // If not premium, check usage limits
+    if (!isPremium) {
+      const { data: usage } = await supabase
+        .from('user_usage')
+        .select('messages_used')
+        .eq('user_id', userId)
+        .eq('day', day)
+        .maybeSingle()
+
+      const used = usage?.messages_used || 0
+
+      if (used >= 5) {
+        return NextResponse.json({
+          error: 'Daily free limit reached (5/day). Upgrade to Premium for unlimited messages!',
+          code: 'LIMIT_REACHED',
+          remaining: 0
+        }, { status: 429 })
+      }
+
+      // Increment usage
+      const nextUsed = used + 1
+      await supabase
+        .from('user_usage')
+        .upsert({ user_id: userId, day, messages_used: nextUsed })
+    }
+
+    // Call Claude API
     const response = await anthropic.messages.create({
-      model: "claude-3-haiku-20240307",
-      max_tokens: 300,
-      messages: messages,
-      system: "You are Mibo, a friendly robot helper who teaches people about scams. Keep answers short and simple.",
-    });
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      messages: [{
+        role: 'user',
+        content: `You are Mibo, a friendly AI assistant helping people learn about scams. 
+        
+Context: ${context || 'General scam education'}
 
-    const reply = response.content[0].text;
+User question: ${message}
 
-    return NextResponse.json({ role: 'assistant', content: reply });
+Respond in a helpful, friendly way. Keep responses concise (2-3 sentences). Use emojis when appropriate.`
+      }]
+    })
 
+    return NextResponse.json({ 
+      response: response.content[0].text 
+    })
   } catch (error) {
-    console.error("Chat error:", error);
-    return NextResponse.json({ error: "Mibo is sleeping (Error)" }, { status: 500 });
+    console.error('Chat error:', error)
+    return NextResponse.json({ 
+      error: 'Sorry, I had trouble processing that!' 
+    }, { status: 500 })
   }
 }

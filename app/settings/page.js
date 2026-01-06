@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
-import DarkModeToggle from '../components/Dark-Mode-Toggle'
+import DarkModeToggle from '../components/DarkModeToggle'
 
 export default function Settings() {
   const router = useRouter()
