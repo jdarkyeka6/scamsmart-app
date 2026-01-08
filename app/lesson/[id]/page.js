@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
 import MiboChat from '../../components/MiboChat'
-import { parseLessonId } from '../../lib/sections'
+import { parseLessonId } from '../../sections'
 
 export default function Lesson() {
   const router = useRouter()
