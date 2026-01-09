@@ -1,195 +1,210 @@
-'use client'
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '../../lib/supabase'
+'use client';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '../../lib/supabase';
 
 export default function PremiumFeedback() {
-  const router = useRouter()
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
-  
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    feedback: '',
-    rating: 0
-  })
+  const router = useRouter();
+  const [feedback, setFeedback] = useState('');
+  const [rating, setRating] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
 
   useEffect(() => {
-    checkUser()
-  }, [])
+    checkIfAlreadySubmitted();
+  }, []);
 
-  const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      router.push('/signin')
-      return
+  const checkIfAlreadySubmitted = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('feedback')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (data) {
+        setAlreadySubmitted(true);
+      }
+    } catch (error) {
+      // No feedback yet
     }
-    setUser(user)
-    setFormData(prev => ({ ...prev, email: user.email }))
-    setLoading(false)
-  }
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    
-    if (!formData.fullName || !formData.feedback || !formData.rating) {
-      alert('Please fill in all fields!')
-      return
-    }
-
-    if (formData.feedback.length < 20) {
-      alert('Please provide more detailed feedback (at least 20 characters)')
-      return
-    }
-
-    setSubmitting(true)
+    e.preventDefault();
+    setLoading(true);
 
     try {
-      // Submit feedback
-      const { error: feedbackError } = await supabase
-        .from('premium_feedback')
-        .insert({
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        router.push('/signin');
+        return;
+      }
+
+      // Get user email
+      const { data: progressData } = await supabase
+        .from('user_progress')
+        .select('email, display_name')
+        .eq('user_id', user.id)
+        .single();
+
+      // Save feedback
+      await supabase.from('feedback').insert([
+        {
           user_id: user.id,
-          user_email: formData.email,
-          full_name: formData.fullName,
-          feedback: formData.feedback,
-          rating: formData.rating
-        })
+          user_email: progressData?.email || user.email,
+          user_name: progressData?.display_name || 'Anonymous',
+          feedback: feedback,
+          rating: rating,
+          created_at: new Date().toISOString()
+        }
+      ]);
 
-      if (feedbackError) throw feedbackError
+      // Grant 1 week Premium
+      const oneWeekFromNow = new Date();
+      oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
 
-      // Grant premium
-      const oneMonthFromNow = new Date()
-      oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1)
-
-      const { error: premiumError } = await supabase
+      await supabase
         .from('user_progress')
         .update({
           is_premium: true,
-          premium_expires_at: oneMonthFromNow.toISOString()
+          premium_until: oneWeekFromNow.toISOString()
         })
-        .eq('user_id', user.id)
+        .eq('user_id', user.id);
 
-      if (premiumError) throw premiumError
-
-      alert('🎉 Thank you for your feedback! Premium activated for 1 month!')
-      router.push('/dashboard')
+      setSubmitted(true);
     } catch (error) {
-      console.error('Error:', error)
-      alert('Something went wrong. Please try again!')
-      setSubmitting(false)
+      console.error('Error submitting feedback:', error);
+      alert('Error submitting feedback. Please try again.');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  if (alreadySubmitted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center px-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center border border-gray-100">
+          <div className="text-6xl mb-4">✅</div>
+          <h2 className="text-2xl font-black text-gray-900 mb-4">Already Submitted!</h2>
+          <p className="text-gray-600 mb-6">
+            You've already submitted feedback and received your Premium trial. Thank you!
+          </p>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors"
+          >
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    );
   }
 
-  if (loading) {
+  if (submitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
-        <div className="text-xl text-gray-600">Loading...</div>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center px-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center border border-gray-100">
+          <div className="text-6xl mb-4">🎉</div>
+          <h2 className="text-2xl font-black text-gray-900 mb-4">Thank You!</h2>
+          <p className="text-gray-600 mb-6">
+            Your feedback is invaluable! You've been upgraded to <span className="font-bold text-yellow-600">Premium for 1 week FREE!</span>
+          </p>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <p className="text-sm text-yellow-800">
+              ⭐ Premium features unlocked for 7 days!
+            </p>
+          </div>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors"
+          >
+            Go to Dashboard
+          </button>
+        </div>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-12 px-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Get 1 Month FREE Premium</h1>
-          <p className="text-gray-600 mb-6">Share your honest feedback to unlock premium features!</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center px-4 py-8">
+      <div className="max-w-md w-full">
+        <div className="text-center mb-8">
+          <img src="/logo.png" alt="ScamSmart" className="w-20 h-20 mx-auto mb-4 drop-shadow-lg" />
+          <h1 className="text-3xl font-black text-gray-900 mb-2">Get Premium FREE!</h1>
+          <p className="text-gray-600">Share your feedback to unlock 1 week of Premium</p>
+        </div>
 
-          <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6 rounded">
-            <p className="text-sm text-yellow-800">
-              <strong>⚠️ Please take this seriously.</strong><br/>
-              We read ALL feedback forms. Invalid info (e.g., "apamin", fake details, or spam) will result in your free premium being cancelled. 
-              <strong> Honest feedback is wanted!</strong> Don't glaze us to get premium - all feedback is taken onboard. 
-              You are not rewarded greater or less for a better or worse rating. Be real with us! 🙏
+        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+          <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-lg p-4 mb-6 text-center">
+            <p className="text-white font-bold text-lg mb-1">🎁 Special Offer</p>
+            <p className="text-white text-sm">
+              Premium Trial (Worth $5) - FREE for your feedback!
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Full Name *
+              <label className="block text-sm font-semibold text-gray-700 mb-3 text-center">
+                Rate Your Experience
               </label>
-              <input
-                type="text"
-                value={formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
-                placeholder="John Smith"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Email *
-              </label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-900"
-                required
-                disabled
-              />
-              <p className="text-xs text-gray-500 mt-1">Using your account email</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                How would you rate ScamSmart so far? *
-              </label>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5].map((rating) => (
+              <div className="flex gap-2 justify-center">
+                {[1, 2, 3, 4, 5].map((star) => (
                   <button
-                    key={rating}
+                    key={star}
                     type="button"
-                    onClick={() => setFormData({ ...formData, rating })}
-                    className={`w-12 h-12 rounded-lg border-2 font-bold transition-all ${
-                      formData.rating === rating
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400'
-                    }`}
+                    onClick={() => setRating(star)}
+                    className="text-4xl transition-transform hover:scale-110"
                   >
-                    {rating}
+                    {star <= rating ? '⭐' : '☆'}
                   </button>
                 ))}
               </div>
-              <p className="text-xs text-gray-500 mt-1">1 = Poor, 5 = Excellent</p>
+              {rating > 0 && (
+                <p className="text-center text-sm text-gray-500 mt-2">
+                  {rating === 5 ? '🎉 Awesome!' : rating >= 3 ? '👍 Thanks!' : '💭 We appreciate your honesty'}
+                </p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Your Honest Feedback *
+                Your Feedback <span className="text-red-500">*</span>
               </label>
               <textarea
-                value={formData.feedback}
-                onChange={(e) => setFormData({ ...formData, feedback: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
-                rows={6}
-                placeholder="What do you think of ScamSmart? What can we improve? What do you love? Be honest - we want real feedback!"
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                rows="6"
+                placeholder="We'd love to hear your thoughts! What do you like? What could be better? Any features you'd like to see?"
                 required
-                minLength={20}
+                minLength={10}
               />
-              <p className="text-xs text-gray-500 mt-1">Minimum 20 characters</p>
+              <p className="text-xs text-gray-500 mt-1">Minimum 10 characters</p>
             </div>
 
             <button
               type="submit"
-              disabled={submitting}
-              className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-white py-4 rounded-lg font-bold text-lg hover:from-yellow-500 hover:to-yellow-700 shadow-lg transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading || rating === 0 || feedback.length < 10}
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
             >
-              {submitting ? 'Submitting...' : 'Submit Feedback & Activate Premium 🎉'}
+              {loading ? 'Submitting...' : '🎉 Submit & Unlock Premium FREE'}
             </button>
           </form>
 
-          <p className="text-xs text-gray-500 text-center mt-6">
-            By submitting, you agree to provide honest feedback. Premium will be active for 1 month from today.
-          </p>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="w-full mt-4 text-gray-600 hover:text-gray-900 font-medium transition-colors text-sm"
+          >
+            ← Back to Dashboard
+          </button>
         </div>
       </div>
     </div>
-  )
+  );
 }
