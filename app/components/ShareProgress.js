@@ -1,107 +1,103 @@
-'use client'
-import { useState } from 'react'
+'use client';
+import { useState } from 'react';
 
 export default function ShareProgress({ progress, userEmail }) {
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState(false);
 
-  const getLevel = () => Math.floor((progress?.total_xp || 0) / 500) + 1
+  const shareText = `🎯 I just completed ${progress?.lessons_completed || 0} scam detection lessons on ScamSmart and earned ${progress?.total_xp || 0} XP! 
 
-  const shareText = `🛡️ I'm Level ${getLevel()} on ScamSmart!
-📚 ${progress?.lessons_completed || 0} lessons completed
-⭐ ${progress?.total_xp || 0} XP earned
-🔥 ${progress?.streak_count || 0} day streak
+Join me in learning how to spot scams and protect yourself online! 🛡️
 
-Think Before You Click! 🚀
-https://scamsmart.click`
+#ScamSmart #CyberSecurity`;
 
-  const shareToTwitter = () => {
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`
-    window.open(url, '_blank', 'width=550,height=420')
-  }
+  const shareUrl = 'https://scamsmart.click';
 
-  const shareToFacebook = () => {
-    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent('https://scamsmart.click')}&quote=${encodeURIComponent(shareText)}`
-    window.open(url, '_blank', 'width=550,height=420')
-  }
+  const handleShare = (platform) => {
+    const encodedText = encodeURIComponent(shareText);
+    const encodedUrl = encodeURIComponent(shareUrl);
 
-  const shareToLinkedIn = () => {
-    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://scamsmart.click')}`
-    window.open(url, '_blank', 'width=550,height=420')
-  }
+    const urls = {
+      twitter: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
+      gmail: `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent('Check out ScamSmart!')}&body=${encodedText}%0A%0A${encodedUrl}`,
+      whatsapp: `https://wa.me/?text=${encodedText}%0A%0A${encodedUrl}`,
+      reddit: `https://reddit.com/submit?url=${encodedUrl}&title=${encodeURIComponent('ScamSmart - Learn to Detect Scams')}`,
+    };
+
+    window.open(urls[platform], '_blank', 'width=600,height=400');
+  };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(shareText)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
+    navigator.clipboard.writeText(`${shareText}\n\n${shareUrl}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
-      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">📢 Share Your Progress</h3>
-      
-      <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl p-6 text-white mb-6">
-        <div className="flex items-center gap-3 mb-4">
-          <img src="/logo.png" alt="ScamSmart" className="w-12 h-12 rounded-lg" />
-          <div>
-            <h4 className="font-black text-lg">ScamSmart</h4>
-            <p className="text-xs opacity-90">Think Before You Click</p>
-          </div>
-        </div>
-        
-        <div className="space-y-2 mb-4">
-          <p className="text-2xl font-black">Level {getLevel()} 🏆</p>
-          <div className="grid grid-cols-3 gap-2 text-sm">
-            <div>
-              <p className="opacity-90">Lessons</p>
-              <p className="font-bold text-lg">{progress?.lessons_completed || 0}</p>
-            </div>
-            <div>
-              <p className="opacity-90">XP</p>
-              <p className="font-bold text-lg">{progress?.total_xp || 0}</p>
-            </div>
-            <div>
-              <p className="opacity-90">Streak</p>
-              <p className="font-bold text-lg">{progress?.streak_count || 0}🔥</p>
-            </div>
-          </div>
-        </div>
-        
-        <p className="text-xs opacity-75">scamsmart.click</p>
-      </div>
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+      <h3 className="text-xl font-black text-gray-900 dark:text-white mb-4">📢 Share Your Progress</h3>
+      <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
+        Inspire your friends and family to learn scam detection!
+      </p>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <button
-          onClick={shareToTwitter}
-          className="flex items-center justify-center gap-2 bg-[#1DA1F2] text-white px-4 py-3 rounded-lg font-semibold hover:bg-[#1a8cd8] transition-colors"
+          onClick={() => handleShare('twitter')}
+          className="flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-lg font-semibold transition-colors"
         >
-          <span className="text-xl">𝕏</span>
-          Twitter
+          <span>🐦</span>
+          <span className="hidden sm:inline">Twitter</span>
         </button>
-        
+
         <button
-          onClick={shareToFacebook}
-          className="flex items-center justify-center gap-2 bg-[#1877F2] text-white px-4 py-3 rounded-lg font-semibold hover:bg-[#1664d8] transition-colors"
+          onClick={() => handleShare('facebook')}
+          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-semibold transition-colors"
         >
-          <span className="text-xl">f</span>
-          Facebook
+          <span>📘</span>
+          <span className="hidden sm:inline">Facebook</span>
         </button>
-        
+
         <button
-          onClick={shareToLinkedIn}
-          className="flex items-center justify-center gap-2 bg-[#0A66C2] text-white px-4 py-3 rounded-lg font-semibold hover:bg-[#094d92] transition-colors"
+          onClick={() => handleShare('linkedin')}
+          className="flex items-center justify-center gap-2 bg-blue-700 hover:bg-blue-800 text-white px-4 py-3 rounded-lg font-semibold transition-colors"
         >
-          <span className="text-xl">in</span>
-          LinkedIn
+          <span>💼</span>
+          <span className="hidden sm:inline">LinkedIn</span>
         </button>
-        
+
+        <button
+          onClick={() => handleShare('gmail')}
+          className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-lg font-semibold transition-colors"
+        >
+          <span>📧</span>
+          <span className="hidden sm:inline">Gmail</span>
+        </button>
+
+        <button
+          onClick={() => handleShare('whatsapp')}
+          className="flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-lg font-semibold transition-colors"
+        >
+          <span>💬</span>
+          <span className="hidden sm:inline">WhatsApp</span>
+        </button>
+
+        <button
+          onClick={() => handleShare('reddit')}
+          className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-3 rounded-lg font-semibold transition-colors"
+        >
+          <span>🤖</span>
+          <span className="hidden sm:inline">Reddit</span>
+        </button>
+
         <button
           onClick={copyToClipboard}
-          className="flex items-center justify-center gap-2 bg-gray-600 dark:bg-gray-700 text-white px-4 py-3 rounded-lg font-semibold hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
+          className="col-span-2 flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-800 text-white px-4 py-3 rounded-lg font-semibold transition-colors"
         >
-          <span className="text-xl">{copied ? '✓' : '📋'}</span>
-          {copied ? 'Copied!' : 'Copy'}
+          <span>{copied ? '✅' : '📋'}</span>
+          <span>{copied ? 'Copied!' : 'Copy Link'}</span>
         </button>
       </div>
     </div>
-  )
+  );
 }

@@ -8,35 +8,73 @@ export default function SignIn() {
   const [isSignUp, setIsSignUp] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('')
+  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
 
-  const handleAuth = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    setError('')
+    setMessage('')
     setLoading(true)
 
     try {
       if (isSignUp) {
+        // Validate username
+        if (!username || username.trim().length < 3) {
+          setError('Username must be at least 3 characters')
+          setLoading(false)
+          return
+        }
+
+        // Check if username exists
+        const { data: existingUser } = await supabase
+          .from('user_progress')
+          .select('display_name')
+          .eq('display_name', username.trim())
+          .single()
+
+        if (existingUser) {
+          setError('Username already taken')
+          setLoading(false)
+          return
+        }
+
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/dashboard`,
+            data: {
+              username: username.trim()
+            }
           }
         })
 
         if (error) throw error
 
-        if (data?.user?.identities?.length === 0) {
-          alert('This email is already registered. Please sign in instead.')
-          setIsSignUp(false)
-          setLoading(false)
-          return
+        // Create user progress with username
+        if (data.user) {
+          const referralCode = Math.random().toString(36).substring(2, 10).toUpperCase()
+          
+          await supabase.from('user_progress').insert([
+            {
+              user_id: data.user.id,
+              email: email,
+              display_name: username.trim(),
+              total_xp: 0,
+              lessons_completed: 0,
+              streak_count: 0,
+              last_activity: new Date().toISOString(),
+              is_premium: false,
+              referral_code: referralCode
+            }
+          ])
         }
 
-        alert('Check your email to verify your account!')
-        
+        setMessage('Check your email to verify your account!')
       } else {
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         })
@@ -46,94 +84,127 @@ export default function SignIn() {
         router.push('/dashboard')
       }
     } catch (error) {
-      console.error('Error:', error)
-      alert(error.message)
+      setError(error.message)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center px-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <img src="/logo.png" alt="ScamSmart" className="w-20 h-20 mx-auto mb-4 drop-shadow-lg" />
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white mb-2">
-            {isSignUp ? 'Create Account' : 'Welcome Back'}
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            {isSignUp ? 'Start your scam-free journey' : 'Continue your learning journey'}
-          </p>
+          <h1 className="text-4xl font-black text-gray-900 mb-2">ScamSmart</h1>
+          <p className="text-gray-600">Think Before You Click</p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-700">
-          <form onSubmit={handleAuth} className="space-y-6">
+        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+          <div className="flex gap-2 mb-6">
+            <button
+              onClick={() => setIsSignUp(false)}
+              className={`flex-1 py-2 rounded-lg font-semibold transition-colors ${
+                !isSignUp
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => setIsSignUp(true)}
+              className={`flex-1 py-2 rounded-lg font-semibold transition-colors ${
+                isSignUp
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Sign Up
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {isSignUp && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Username
+                </label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Choose a username"
+                  required={isSignUp}
+                  minLength={3}
+                />
+                <p className="text-xs text-gray-500 mt-1">At least 3 characters</p>
+              </div>
+            )}
+
             <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Email
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white dark:bg-gray-700"
-                placeholder="you@example.com"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="your@email.com"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Password
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white dark:bg-gray-700"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="••••••••"
                 required
                 minLength={6}
               />
-              {!isSignUp && (
-                <div className="text-right mt-2">
-                  <button
-                    type="button"
-                    onClick={() => router.push('/reset-password')}
-                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold"
-                  >
-                    Forgot Password?
-                  </button>
-                </div>
+              {isSignUp && (
+                <p className="text-xs text-gray-500 mt-1">At least 6 characters</p>
               )}
             </div>
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
+
+            {message && (
+              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+                {message}
+              </div>
+            )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Sign In')}
+              {loading ? 'Loading...' : isSignUp ? 'Create Account' : 'Sign In'}
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold"
-            >
-              {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => router.push('/')}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium"
-          >
-            ← Back to Home
-          </button>
+          {!isSignUp && (
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => router.push('/reset-password')}
+                className="text-sm text-blue-600 hover:text-blue-700 font-semibold"
+              >
+                Forgot Password?
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
