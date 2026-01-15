@@ -4,7 +4,9 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import DarkModeToggle from '../components/DarkModeToggle';
 import AvatarBuilder, { AvatarPreview } from '../components/AvatarBuilder';
+import BannerSelector, { BannerDisplay } from '../components/BannerSelector';
 import { BADGES, checkBadgeUnlocks } from '../lib/badges';
+import { BANNERS, checkBannerUnlocks } from '../lib/banners';
 
 export default function Profile() {
   const router = useRouter();
@@ -15,8 +17,11 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [showAvatarBuilder, setShowAvatarBuilder] = useState(false);
   const [showBadgeSelector, setShowBadgeSelector] = useState(false);
+  const [showBannerSelector, setShowBannerSelector] = useState(false);
   const [unlockedBadges, setUnlockedBadges] = useState([]);
   const [selectedBadges, setSelectedBadges] = useState([]);
+  const [unlockedBanners, setUnlockedBanners] = useState([]);
+  const [tempSelectedBanner, setTempSelectedBanner] = useState('DEFAULT');
 
   useEffect(() => {
     checkUser();
@@ -45,10 +50,15 @@ export default function Profile() {
       setProgress(data);
       setDisplayName(data?.display_name || '');
       setSelectedBadges(data?.selected_badges || []);
+      setTempSelectedBanner(data?.selected_banner || 'DEFAULT');
       
       // Check badge unlocks
       const badges = await checkBadgeUnlocks(userId, supabase);
       setUnlockedBadges(badges);
+      
+      // Check banner unlocks
+      const banners = checkBannerUnlocks(data);
+      setUnlockedBanners(banners);
       
       setLoading(false);
     } catch (error) {
@@ -96,6 +106,22 @@ export default function Profile() {
     } catch (error) {
       console.error('Error saving avatar:', error);
       alert('Failed to save avatar');
+    }
+  };
+
+  const saveBanner = async () => {
+    try {
+      await supabase
+        .from('user_progress')
+        .update({ selected_banner: tempSelectedBanner })
+        .eq('user_id', user.id);
+
+      setShowBannerSelector(false);
+      await loadProgress(user.id);
+      alert('Banner updated!');
+    } catch (error) {
+      console.error('Error saving banner:', error);
+      alert('Failed to save banner');
     }
   };
 
@@ -158,6 +184,22 @@ export default function Profile() {
             currentAvatar={currentAvatar}
             onSave={saveAvatar}
             onCancel={() => setShowAvatarBuilder(false)}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (showBannerSelector) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+        <div className="max-w-4xl w-full">
+          <BannerSelector
+            unlockedBanners={unlockedBanners}
+            selectedBanner={tempSelectedBanner}
+            onSelect={setTempSelectedBanner}
+            onSave={saveBanner}
+            onCancel={() => setShowBannerSelector(false)}
           />
         </div>
       </div>
@@ -255,6 +297,21 @@ export default function Profile() {
         <div className="mb-8">
           <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-2">Your Profile</h2>
           <p className="text-gray-600 dark:text-gray-400">Customize your ScamSmart experience</p>
+        </div>
+
+        {/* Banner Display */}
+        <div className="mb-6">
+          <BannerDisplay 
+            bannerId={progress?.selected_banner || 'DEFAULT'} 
+            userProgress={progress} 
+            size="large" 
+          />
+          <button
+            onClick={() => setShowBannerSelector(true)}
+            className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-semibold transition-colors"
+          >
+            Change Banner ({unlockedBanners.length}/{Object.keys(BANNERS).length} Unlocked)
+          </button>
         </div>
 
         {/* Avatar & Basic Info */}
