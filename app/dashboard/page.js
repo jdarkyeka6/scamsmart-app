@@ -5,11 +5,13 @@ import { supabase } from '../../lib/supabase'
 import DarkModeToggle from '../components/DarkModeToggle'
 import HeartsDisplay from '../components/HeartsDisplay'
 import { updateUserHearts } from '../lib/hearts'
+import { LessonPathCompact } from '../components/LessonPath'
 
 export default function Dashboard() {
   const router = useRouter()
   const [user, setUser] = useState(null)
   const [progress, setProgress] = useState(null)
+  const [completedLessons, setCompletedLessons] = useState([])
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
 
@@ -41,6 +43,14 @@ export default function Dashboard() {
         .single()
 
       setProgress(data)
+
+      // Load completed lessons for lesson path
+      const { data: lessons } = await supabase
+        .from('lesson_completions')
+        .select('lesson_id')
+        .eq('user_id', userId)
+
+      setCompletedLessons(lessons?.map(l => l.lesson_id) || [])
       setLoading(false)
     } catch (error) {
       console.error('Error loading progress:', error)
