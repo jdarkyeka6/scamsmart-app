@@ -1,9 +1,6 @@
 export const MAX_HEARTS = 5;
-export const HEART_REGEN_TIME_MS = 60 * 60 * 1000; // 1 hour in milliseconds
+export const HEART_REGEN_TIME_MS = 60 * 60 * 1000;
 
-/**
- * Calculate how many hearts should be regenerated based on time passed
- */
 export function calculateHeartRegen(lastRegenTime) {
   if (!lastRegenTime) return 0;
   
@@ -13,9 +10,6 @@ export function calculateHeartRegen(lastRegenTime) {
   return Math.floor(hoursPassedTotal);
 }
 
-/**
- * Get time until next heart regenerates (in ms)
- */
 export function getTimeUntilNextHeart(lastRegenTime) {
   if (!lastRegenTime) return 0;
   
@@ -25,9 +19,6 @@ export function getTimeUntilNextHeart(lastRegenTime) {
   return timeUntilNext;
 }
 
-/**
- * Format time remaining as MM:SS
- */
 export function formatTimeRemaining(milliseconds) {
   const totalSeconds = Math.ceil(milliseconds / 1000);
   const minutes = Math.floor(totalSeconds / 60);
@@ -36,12 +27,8 @@ export function formatTimeRemaining(milliseconds) {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
-/**
- * Update user's hearts in database (with auto-regeneration)
- */
 export async function updateUserHearts(userId, supabase) {
   try {
-    // Get current hearts and regen time
     const { data: progress } = await supabase
       .from('user_progress')
       .select('hearts, last_heart_regen, is_premium')
@@ -50,12 +37,10 @@ export async function updateUserHearts(userId, supabase) {
 
     if (!progress) return null;
 
-    // Premium users always have max hearts
     if (progress.is_premium) {
       return { hearts: MAX_HEARTS, isPremium: true };
     }
 
-    // Calculate regenerated hearts
     const heartsToRegen = calculateHeartRegen(progress.last_heart_regen);
     
     if (heartsToRegen > 0 && progress.hearts < MAX_HEARTS) {
@@ -79,9 +64,6 @@ export async function updateUserHearts(userId, supabase) {
   }
 }
 
-/**
- * Lose a heart (when wrong answer)
- */
 export async function loseHeart(userId, supabase) {
   try {
     const { data: progress } = await supabase
@@ -90,7 +72,6 @@ export async function loseHeart(userId, supabase) {
       .eq('user_id', userId)
       .single();
 
-    // Premium users don't lose hearts
     if (progress?.is_premium) {
       return { hearts: MAX_HEARTS, canContinue: true };
     }
@@ -116,9 +97,6 @@ export async function loseHeart(userId, supabase) {
   }
 }
 
-/**
- * Refill hearts (Premium only or special rewards)
- */
 export async function refillHearts(userId, supabase) {
   try {
     await supabase

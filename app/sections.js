@@ -47,10 +47,8 @@ import lesson45 from './lib/lessons/45-vendor-impersonation/data.js';
 import lesson46 from './lib/lessons/46-data-breach-response/data.js';
 import lesson47 from './lib/lessons/47-incident-reporting/data.js';
 import lesson48 from './lib/lessons/48-recovery-steps/data.js';
-import lesson49 from './lib/lessons/49-legal-resources/data.js';
-import lesson50 from './lib/lessons/50-australia-social-media-ban-scams/data.js';
 
-// Section organization
+// Section organization - 48 lessons total
 export const sections = [
   {
     id: 'scam-basics',
@@ -111,51 +109,30 @@ export const sections = [
   {
     id: 'incident-response',
     title: 'Incident Response',
-    description: 'What to do if you\'ve been scammed',
+    description: 'What to do if you have been scammed',
     emoji: '🆘',
-    lessons: [lesson46, lesson47, lesson48, lesson49]
-  },
-  {
-    id: 'regional-awareness',
-    title: 'Regional Awareness',
-    description: 'Location-specific scam awareness',
-    emoji: '🌏',
-    lessons: [lesson50]
+    lessons: [lesson46, lesson47, lesson48]
   }
 ];
 
-// Lesson types for filtering
-export const lessonTypes = {
-  INTERACTIVE: 'interactive',
-  VIDEO: 'video',
-  QUIZ: 'quiz',
-  READING: 'reading'
-};
-
-// Helper function to get lesson by ID
 export function getLessonId(sectionIndex, lessonIndex) {
   return `${sectionIndex + 1}-${lessonIndex + 1}`;
 }
 
-// Helper function to parse lesson ID
 export function parseLessonId(lessonId) {
   const [sectionIndex, lessonIndex] = lessonId.split('-').map(n => parseInt(n) - 1);
   return { sectionIndex, lessonIndex };
 }
 
-// Helper function to check if lesson is unlocked
-export function isLessonUnlocked(lessonId, completedLessons) {
-  // First lesson is always unlocked
+export function isLessonUnlocked(lessonId, completedLessons = []) {
   if (lessonId === '1-1') return true;
   
   const { sectionIndex, lessonIndex } = parseLessonId(lessonId);
   
-  // If it's the first lesson of a section, check if previous section is complete
   if (lessonIndex === 0 && sectionIndex > 0) {
     const prevSection = sections[sectionIndex - 1];
     const prevSectionLessons = prevSection.lessons.length;
     
-    // Check if all lessons in previous section are completed
     for (let i = 0; i < prevSectionLessons; i++) {
       const prevLessonId = getLessonId(sectionIndex - 1, i);
       if (!completedLessons.includes(prevLessonId)) {
@@ -165,7 +142,6 @@ export function isLessonUnlocked(lessonId, completedLessons) {
     return true;
   }
   
-  // Otherwise, check if previous lesson is completed
   const prevLessonId = lessonIndex === 0 
     ? getLessonId(sectionIndex - 1, sections[sectionIndex - 1].lessons.length - 1)
     : getLessonId(sectionIndex, lessonIndex - 1);
@@ -173,7 +149,6 @@ export function isLessonUnlocked(lessonId, completedLessons) {
   return completedLessons.includes(prevLessonId);
 }
 
-// Helper function to get lesson data by ID
 export function getLessonData(lessonId) {
   const { sectionIndex, lessonIndex } = parseLessonId(lessonId);
   

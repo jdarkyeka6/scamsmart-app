@@ -1,11 +1,9 @@
-// Optimized chat with minimal tokens
 const SYSTEM_PROMPT = `You are Mibo, a friendly AI assistant for ScamSmart. Help users learn about scam detection. Keep responses under 100 words. Be encouraging and educational.`;
 
 const MAX_FREE_MESSAGES = 10;
 const MAX_PREMIUM_MESSAGES = 50;
 
 export async function sendChatMessage(messages, userProgress) {
-  // Check rate limit
   const limit = userProgress?.is_premium ? MAX_PREMIUM_MESSAGES : MAX_FREE_MESSAGES;
   const used = userProgress?.daily_chat_messages || 0;
   
@@ -17,21 +15,27 @@ export async function sendChatMessage(messages, userProgress) {
     };
   }
 
-  // Only send last 5 messages to save tokens
   const recentMessages = messages.slice(-5);
 
   try {
+    const apiKey = process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY;
+    
+    if (!apiKey) {
+      console.error('Missing API key');
+      return { error: 'CONFIG_ERROR' };
+    }
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY,
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-haiku-3-5-20241022', // CHEAPER MODEL!
-        max_tokens: 300, // Limit response length
-        system: SYSTEM_PROMPT, // Short system prompt
+        model: 'claude-haiku-3-5-20241022',
+        max_tokens: 300,
+        system: SYSTEM_PROMPT,
         messages: recentMessages.map(msg => ({
           role: msg.role,
           content: msg.content

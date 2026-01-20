@@ -1,4 +1,3 @@
-// Challenge types
 export const CHALLENGE_TYPES = {
   SCAM_VS_SAFE: 'scam_vs_safe',
   SPOT_RED_FLAGS: 'spot_red_flags',
@@ -6,21 +5,20 @@ export const CHALLENGE_TYPES = {
   PATTERN_MATCH: 'pattern_match'
 };
 
-// Scam vs Safe Challenges (Quick judgment - 10 seconds each)
 export const SCAM_VS_SAFE_CHALLENGES = [
   {
     id: 'svs-1',
     type: CHALLENGE_TYPES.SCAM_VS_SAFE,
     scenario: 'Email from "Amazon" saying your account will be suspended unless you verify payment details immediately.',
     isScam: true,
-    explanation: 'Legitimate companies don\'t threaten immediate account suspension. This creates false urgency.',
+    explanation: 'Legitimate companies do not threaten immediate account suspension. This creates false urgency.',
     skill: 'pressure_resistance',
     difficulty: 'easy'
   },
   {
     id: 'svs-2',
     type: CHALLENGE_TYPES.SCAM_VS_SAFE,
-    scenario: 'Text message from your bank\'s official number asking you to call them back regarding suspicious activity.',
+    scenario: 'Text message from your bank official number asking you to call them back regarding suspicious activity.',
     isScam: false,
     explanation: 'Banks do send legitimate fraud alerts. However, always call the number on your card, not the one in the message.',
     skill: 'deception_detection',
@@ -29,7 +27,7 @@ export const SCAM_VS_SAFE_CHALLENGES = [
   {
     id: 'svs-3',
     type: CHALLENGE_TYPES.SCAM_VS_SAFE,
-    scenario: 'LinkedIn message from a "recruiter" offering a high-paying remote job but requiring you to pay for training materials first.',
+    scenario: 'LinkedIn message from a recruiter offering a high-paying remote job but requiring you to pay for training materials first.',
     isScam: true,
     explanation: 'Legitimate employers never ask you to pay for training or equipment upfront.',
     skill: 'manipulation_awareness',
@@ -38,7 +36,7 @@ export const SCAM_VS_SAFE_CHALLENGES = [
   {
     id: 'svs-4',
     type: CHALLENGE_TYPES.SCAM_VS_SAFE,
-    scenario: 'Email from your company\'s IT department asking you to reset your password through a link.',
+    scenario: 'Email from your company IT department asking you to reset your password through a link.',
     isScam: true,
     explanation: 'IT departments typically direct you to reset passwords through official company portals, not via email links.',
     skill: 'digital_self_defense',
@@ -47,15 +45,14 @@ export const SCAM_VS_SAFE_CHALLENGES = [
   {
     id: 'svs-5',
     type: CHALLENGE_TYPES.SCAM_VS_SAFE,
-    scenario: 'Friend sends you a Facebook message: "OMG is this you in this video?" with a suspicious link.',
+    scenario: 'Friend sends you a Facebook message: OMG is this you in this video? with a suspicious link.',
     isScam: true,
-    explanation: 'This is a common account hijacking scam. Your friend\'s account was likely compromised.',
+    explanation: 'This is a common account hijacking scam. Your friend account was likely compromised.',
     skill: 'pattern_recognition',
     difficulty: 'easy'
   }
 ];
 
-// Spot Red Flags Challenges (Find all suspicious elements)
 export const SPOT_RED_FLAGS_CHALLENGES = [
   {
     id: 'srf-1',
@@ -91,7 +88,7 @@ export const SPOT_RED_FLAGS_CHALLENGES = [
       { id: 'unrealistic-pay', text: 'Unrealistic salary promise', location: 'title' },
       { id: 'vague-company', text: 'Vague company name', location: 'company' },
       { id: 'upfront-payment', text: 'Requires upfront payment', location: 'description' },
-      { id: 'too-easy', text: 'Claims "no experience needed" for high pay', location: 'description' },
+      { id: 'too-easy', text: 'Claims no experience needed for high pay', location: 'description' },
       { id: 'payment-method', text: 'Specifies unusual payment method', location: 'requirements' }
     ],
     skill: 'manipulation_awareness',
@@ -100,7 +97,6 @@ export const SPOT_RED_FLAGS_CHALLENGES = [
   }
 ];
 
-// Fake Inbox Challenges (Review multiple messages)
 export const FAKE_INBOX_CHALLENGES = [
   {
     id: 'fi-1',
@@ -154,7 +150,6 @@ export const FAKE_INBOX_CHALLENGES = [
   }
 ];
 
-// Pattern Matching Challenges (Connect related scam tactics)
 export const PATTERN_MATCH_CHALLENGES = [
   {
     id: 'pm-1',
@@ -162,31 +157,11 @@ export const PATTERN_MATCH_CHALLENGES = [
     title: 'Match Scam Tactics',
     description: 'Match each scam type with its primary tactic',
     pairs: [
-      {
-        scam: 'Phishing Email',
-        tactic: 'Impersonation',
-        correct: true
-      },
-      {
-        scam: 'Tech Support Scam',
-        tactic: 'Fear and Urgency',
-        correct: true
-      },
-      {
-        scam: 'Romance Scam',
-        tactic: 'Emotional Manipulation',
-        correct: true
-      },
-      {
-        scam: 'Investment Scam',
-        tactic: 'Greed and FOMO',
-        correct: true
-      },
-      {
-        scam: 'Fake Charity',
-        tactic: 'Sympathy Exploitation',
-        correct: true
-      }
+      { scam: 'Phishing Email', tactic: 'Impersonation', correct: true },
+      { scam: 'Tech Support Scam', tactic: 'Fear and Urgency', correct: true },
+      { scam: 'Romance Scam', tactic: 'Emotional Manipulation', correct: true },
+      { scam: 'Investment Scam', tactic: 'Greed and FOMO', correct: true },
+      { scam: 'Fake Charity', tactic: 'Sympathy Exploitation', correct: true }
     ],
     distractors: ['Social Proof', 'Authority Bias', 'Reciprocity'],
     skill: 'pattern_recognition',
@@ -195,7 +170,6 @@ export const PATTERN_MATCH_CHALLENGES = [
   }
 ];
 
-// Get random challenges by type
 export function getRandomChallenges(type, count = 5) {
   let pool = [];
   
@@ -216,15 +190,13 @@ export function getRandomChallenges(type, count = 5) {
       return [];
   }
   
-  // Shuffle and take count
   const shuffled = [...pool].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, Math.min(count, shuffled.length));
 }
 
-// Calculate challenge score
 export function calculateChallengeScore(correct, total, timeBonus = 0) {
   const accuracy = (correct / total) * 100;
-  const baseXP = Math.round((correct / total) * 100) * 2; // Up to 200 XP
+  const baseXP = Math.round((correct / total) * 100) * 2;
   const totalXP = baseXP + timeBonus;
   
   return {
