@@ -7,16 +7,14 @@ import { loseHeart } from '../../../lib/hearts';
 import { OutOfHeartsModal } from '../../../components/HeartsDisplay';
 import { getTimeUntilNextHeart, formatTimeRemaining } from '../../../lib/hearts';
 
-export default function ScamVsSafe() {
+export default function FakeInbox() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [progress, setProgress] = useState(null);
-  const [challenges, setChallenges] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState([]);
-  const [timeLeft, setTimeLeft] = useState(10);
+  const [challenge, setChallenge] = useState(null);
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
+  const [answers, setAnswers] = useState({});
   const [showResult, setShowResult] = useState(false);
-  const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [gameOver, setGameOver] = useState(false);
   const [showOutOfHearts, setShowOutOfHearts] = useState(false);
   const [heartsRemaining, setHeartsRemaining] = useState(5);
@@ -24,22 +22,6 @@ export default function ScamVsSafe() {
   useEffect(() => {
     checkUser();
   }, []);
-
-  useEffect(() => {
-    if (challenges.length > 0 && !showResult && !gameOver) {
-      const timer = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            handleAnswer(null);
-            return 10;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      return () => clearInterval(timer);
-    }
-  }, [currentIndex, showResult, gameOver, challenges]);
 
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -52,8 +34,8 @@ export default function ScamVsSafe() {
     setUser(user);
     await loadProgress(user.id);
     
-    const randomChallenges = getRandomChallenges(CHALLENGE_TYPES.SCAM_VS_SAFE, 5);
-    setChallenges(randomChallenges);
+    const challenges = getRandomChallenges(CHALLENGE_TYPES.FAKE_INBOX, 1);
+    setChallenge(challenges[0]);
   };
 
   const loadProgress = async (userId) => {
@@ -71,21 +53,16 @@ export default function ScamVsSafe() {
     }
   };
 
-  const handleAnswer = async (answer) => {
-    if (showResult) return;
+  const handleAnswer = async (isScam) => {
+    const message = challenge.messages[currentMessageIndex];
+    const isCorrect = isScam === message.isScam;
 
-    const challenge = challenges[currentIndex];
-    const isCorrect = answer === challenge.isScam;
-    
-    setSelectedAnswer(answer);
-    setShowResult(true);
-    
-    const newAnswers = [...answers, { 
-      challengeId: challenge.id, 
-      correct: isCorrect,
-      timeTaken: 10 - timeLeft
-    }];
+    const newAnswers = {
+      ...answers,
+      [message.id]: { userAnswer: isScam, correct: isCorrect }
+    };
     setAnswers(newAnswers);
+    setShowResult(true);
 
     if (!isCorrect && !progress?.is_premium) {
       const result = await loseHeart(user.id, supabase);
@@ -99,11 +76,9 @@ export default function ScamVsSafe() {
     }
 
     setTimeout(() => {
-      if (currentIndex < challenges.length - 1) {
-        setCurrentIndex(currentIndex + 1);
+      if (currentMessageIndex < challenge.messages.length - 1) {
+        setCurrentMessageIndex(currentMessageIndex + 1);
         setShowResult(false);
-        setSelectedAnswer(null);
-        setTimeLeft(10);
       } else {
         finishChallenge(newAnswers);
       }
@@ -113,11 +88,8 @@ export default function ScamVsSafe() {
   const finishChallenge = async (finalAnswers) => {
     setGameOver(true);
     
-    const correct = finalAnswers.filter(a => a.correct).length;
-    const avgTime = finalAnswers.reduce((sum, a) => sum + a.timeTaken, 0) / finalAnswers.length;
-    const timeBonus = avgTime < 5 ? 50 : avgTime < 7 ? 25 : 0;
-    
-    const score = calculateChallengeScore(correct, challenges.length, timeBonus);
+    const correct = Object.values(finalAnswers).filter(a => a.correct).length;
+    const score = calculateChallengeScore(correct, challenge.messages.length);
 
     await supabase
       .from('user_progress')
@@ -127,22 +99,21 @@ export default function ScamVsSafe() {
       .eq('user_id', user.id);
 
     const performanceScore = (score.accuracy / 100) * 10;
-    
     await supabase.from('skill_activity_log').insert([
       {
         user_id: user.id,
-        lesson_id: 'challenge-scam-vs-safe',
-        skill_type: 'pressure_resistance',
+        lesson_id: 'challenge-fake-inbox',
+        skill_type: challenge.skill,
         performance_score: performanceScore,
         accuracy_percentage: score.accuracy
       }
     ]);
   };
 
-  if (!challenges.length) {
+  if (!challenge) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-purple-600"></div>
       </div>
     );
   }
@@ -158,24 +129,24 @@ export default function ScamVsSafe() {
   }
 
   if (gameOver) {
-    const correct = answers.filter(a => a.correct).length;
-    const score = calculateChallengeScore(correct, challenges.length);
+    const correct = Object.values(answers).filter(a => a.correct).length;
+    const score = calculateChallengeScore(correct, challenge.messages.length);
 
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-        <div className="max-w-2xl w-full bg-white rounded-2xl shadow-2xl border border-gray-200 p-12">
+        <div className="max-w-3xl w-full bg-white rounded-2xl shadow-2xl border border-gray-200 p-12">
           <div className="text-center mb-8">
             <div className="text-8xl mb-6">
               {score.accuracy >= 80 ? '🎉' : score.accuracy >= 60 ? '👍' : '💪'}
             </div>
-            <h2 className="text-5xl font-black text-gray-900 mb-3">Challenge Complete!</h2>
-            <p className="text-xl text-gray-600">Scam vs Safe</p>
+            <h2 className="text-5xl font-black text-gray-900 mb-3">Inbox Reviewed!</h2>
+            <p className="text-xl text-gray-600">Fake Inbox Challenge</p>
           </div>
 
           <div className="grid grid-cols-3 gap-6 mb-8">
-            <div className="bg-blue-50 rounded-xl p-6 text-center border border-blue-200">
+            <div className="bg-green-50 rounded-xl p-6 text-center border border-green-200">
               <p className="text-base text-gray-600 mb-2">Correct</p>
-              <p className="text-4xl font-black text-blue-600">{score.correct}/{score.total}</p>
+              <p className="text-4xl font-black text-green-600">{score.correct}/{score.total}</p>
             </div>
             <div className="bg-purple-50 rounded-xl p-6 text-center border border-purple-200">
               <p className="text-base text-gray-600 mb-2">Accuracy</p>
@@ -187,19 +158,28 @@ export default function ScamVsSafe() {
             </div>
           </div>
 
-          <div className="space-y-3 mb-8">
-            {answers.map((answer, i) => (
-              <div key={i} className={`p-4 rounded-lg border-2 ${
-                answer.correct 
-                  ? 'bg-green-50 border-green-300' 
-                  : 'bg-red-50 border-red-300'
-              }`}>
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-gray-900 text-lg">Question {i + 1}</span>
-                  <span className="text-3xl">{answer.correct ? '✅' : '❌'}</span>
+          <div className="space-y-4 mb-8">
+            {challenge.messages.map((message) => {
+              const answer = answers[message.id];
+              return (
+                <div key={message.id} className={`p-6 rounded-xl border-2 ${
+                  answer?.correct 
+                    ? 'bg-green-50 border-green-300' 
+                    : 'bg-red-50 border-red-300'
+                }`}>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <p className="font-bold text-gray-900 text-lg mb-2">{message.from}</p>
+                      <p className="text-base text-gray-700">{message.subject}</p>
+                    </div>
+                    <span className="text-3xl flex-shrink-0 ml-4">{answer?.correct ? '✅' : '❌'}</span>
+                  </div>
+                  <p className="text-base text-gray-700 mt-3 pt-3 border-t border-gray-300">
+                    <strong>{message.isScam ? '🚨 SCAM' : '✅ SAFE'}:</strong> {message.explanation}
+                  </p>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="flex gap-4">
@@ -211,7 +191,7 @@ export default function ScamVsSafe() {
             </button>
             <button
               onClick={() => window.location.reload()}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl text-lg transition-colors"
+              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 rounded-xl text-lg transition-colors"
             >
               Try Again
             </button>
@@ -221,41 +201,47 @@ export default function ScamVsSafe() {
     );
   }
 
-  const challenge = challenges[currentIndex];
+  const message = challenge.messages[currentMessageIndex];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center p-6">
-      <div className="max-w-4xl w-full">
+    <div className="min-h-screen bg-gradient-to-br from-purple-500 to-indigo-500 p-6">
+      <div className="max-w-4xl mx-auto py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="bg-white/20 backdrop-blur-sm rounded-full px-8 py-4 text-white font-bold text-xl">
-            Question {currentIndex + 1} / {challenges.length}
+            📧 Message {currentMessageIndex + 1} / {challenge.messages.length}
           </div>
-          <div className="flex items-center gap-6">
-            <div className="bg-white/20 backdrop-blur-sm rounded-full px-8 py-4 text-white font-bold flex items-center gap-3">
-              <span className="text-2xl">⏱️</span>
-              <span className={`text-4xl ${timeLeft <= 3 ? 'text-red-300 animate-pulse' : ''}`}>
-                {timeLeft}s
-              </span>
-            </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-full px-8 py-4 text-white font-bold flex items-center gap-3">
-              <span className="text-2xl">❤️</span>
-              <span className="text-3xl">{heartsRemaining}</span>
-            </div>
+          <div className="bg-white/20 backdrop-blur-sm rounded-full px-8 py-4 text-white font-bold flex items-center gap-3">
+            <span className="text-2xl">❤️</span>
+            <span className="text-3xl">{heartsRemaining}</span>
           </div>
         </div>
 
-        {/* Challenge Card */}
-        <div className="bg-white rounded-2xl shadow-2xl p-10 mb-8">
-          <h2 className="text-3xl font-black text-gray-900 mb-8 text-center">
-            Is this a scam or safe?
-          </h2>
-
-          <div className="bg-gray-50 rounded-xl p-8 mb-8 min-h-[200px] flex items-center border border-gray-200">
-            <p className="text-2xl text-gray-800 leading-relaxed">
-              {challenge.scenario}
-            </p>
+        {/* Email Card */}
+        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden mb-8">
+          {/* Email Header */}
+          <div className="bg-gray-100 p-8 border-b-2 border-gray-200">
+            <div className="mb-4">
+              <span className="text-sm text-gray-500 font-bold">FROM:</span>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{message.from}</p>
+            </div>
+            <div>
+              <span className="text-sm text-gray-500 font-bold">SUBJECT:</span>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{message.subject}</p>
+            </div>
           </div>
+
+          {/* Email Body */}
+          <div className="p-8 min-h-[250px] flex items-center">
+            <p className="text-gray-800 text-2xl leading-relaxed">{message.preview}</p>
+          </div>
+        </div>
+
+        {/* Question */}
+        <div className="bg-white rounded-2xl shadow-2xl p-8 mb-8">
+          <h2 className="text-3xl font-black text-gray-900 mb-8 text-center">
+            Is this email a scam or safe?
+          </h2>
 
           {!showResult ? (
             <div className="grid grid-cols-2 gap-6">
@@ -274,23 +260,23 @@ export default function ScamVsSafe() {
             </div>
           ) : (
             <div className={`p-8 rounded-xl border-4 ${
-              selectedAnswer === challenge.isScam
+              answers[message.id]?.correct
                 ? 'bg-green-50 border-green-500'
                 : 'bg-red-50 border-red-500'
             }`}>
               <div className="flex items-center gap-4 mb-4">
                 <span className="text-5xl">
-                  {selectedAnswer === challenge.isScam ? '✅' : '❌'}
+                  {answers[message.id]?.correct ? '✅' : '❌'}
                 </span>
                 <span className="text-3xl font-black text-gray-900">
-                  {selectedAnswer === challenge.isScam ? 'Correct!' : 'Wrong!'}
+                  {answers[message.id]?.correct ? 'Correct!' : 'Wrong!'}
                 </span>
               </div>
               <p className="text-xl text-gray-700 font-bold mb-3">
-                {challenge.isScam ? '🚨 This is a SCAM' : '✅ This is SAFE'}
+                {message.isScam ? '🚨 This is a SCAM' : '✅ This is SAFE'}
               </p>
               <p className="text-lg text-gray-600">
-                {challenge.explanation}
+                {message.explanation}
               </p>
             </div>
           )}
@@ -300,7 +286,7 @@ export default function ScamVsSafe() {
         <div className="bg-white/20 backdrop-blur-sm rounded-full h-4 overflow-hidden">
           <div 
             className="bg-white h-4 transition-all duration-300"
-            style={{ width: `${((currentIndex + 1) / challenges.length) * 100}%` }}
+            style={{ width: `${((currentMessageIndex + 1) / challenge.messages.length) * 100}%` }}
           ></div>
         </div>
       </div>

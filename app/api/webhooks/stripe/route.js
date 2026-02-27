@@ -1,78 +1,85 @@
-import { NextResponse } from "next/server";
-import Stripe from "stripe";
-import { createClient } from "@supabase/supabase-js";
+import { NextResponse } from 'next/server';
+import Stripe from 'stripe';
+import { createClient } from '@supabase/supabase-js';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2024-06-20",
-});
-
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
 export async function POST(request) {
   const body = await request.text();
-  const sig = request.headers.get("stripe-signature");
+  const signature = request.headers.get('stripe-signature');
 
   let event;
-  try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
-  } catch (err) {
-    console.error("Webhook signature verification failed:", err?.message || err);
-    return NextResponse.json({ error: "Webhook error" }, { status: 400 });
-  }
 
   try {
-    switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object;
-
-        const userId =
-          session?.subscription_data?.metadata?.userId ||
-          session?.metadata?.userId ||
-          null;
-
-        if (userId && session.subscription) {
-          await supabase
-            .from("user_progress")
-            .update({
-              is_premium: true,
-              stripe_customer_id: session.customer,
-              stripe_subscription_id: session.subscription,
-            })
-            .eq("user_id", userId);
-        }
-        break;
-      }
-
-      case "customer.subscription.updated":
-      case "customer.subscription.deleted": {
-        const subscription = event.data.object;
-        const isPremium = subscription.status === "active";
-
-        await supabase
-          .from("user_progress")
-          .update({
-            is_premium: isPremium,
-            premium_expires_at: isPremium ? null : new Date().toISOString(),
-          })
-          .eq("stripe_subscription_id", subscription.id);
-        break;
-      }
-
-      default:
-        break;
-    }
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err) {
-    console.error("Webhook handler crashed:", err);
-    // Return 200 so Stripe doesn't retry forever for your internal errors
-    return NextResponse.json({ received: true }, { status: 200 });
+    console.error('Webhook signature verification failed:', err.message);
+    return NextResponse.json({ error: 'Webhook Error' }, { status: 400 });
   }
 
-  return NextResponse.json({ received: true }, { status: 200 });
+  // Handle the event
+  switch (event.type) {
+    case 'checkout.session.completed':
+      const session = event.data.object;
+      await handleCheckoutComplete(session);
+      break;
+
+    case 'customer.subscription.updated':
+    case 'customer.subscription.deleted':
+      const subscription = event.data.object;
+      await handleSubscriptionChange(subscription);
+      break;
+
+    default:
+      console.log(`Unhandled event type: ${event.type}`);
+  }
+
+  return NextResponse.json({ received: true });
+}
+
+async function handleCheckoutComplete(session) {
+  const userId = session.metadata.userId;
+  const customerId = session.customer;
+
+  // Update user to Premium
+  await supabase
+    .from('user_progress')
+    .update({
+      is_premium: true,
+      stripe_customer_id: customerId,
+      premium_started_at: new Date().toISOString()
+    })
+    .eq('user_id', userId);
+
+  console.log(`User ${userId} upgraded to Premium`);
+}
+
+async function handleSubscriptionChange(subscription) {
+  const customerId = subscription.customer;
+  const isActive = subscription.status === 'active';
+
+  // Find user by Stripe customer ID
+  const { data: progress } = await supabase
+    .from('user_progress')
+    .select('user_id')
+    .eq('stripe_customer_id', customerId)
+    .single();
+
+  if (progress) {
+    await supabase
+      .from('user_progress')
+      .update({
+        is_premium: isActive,
+        premium_ended_at: isActive ? null : new Date().toISOString()
+      })
+      .eq('user_id', progress.user_id);
+
+    console.log(`User ${progress.user_id} subscription updated: ${isActive ? 'active' : 'cancelled'}`);
+  }
 }

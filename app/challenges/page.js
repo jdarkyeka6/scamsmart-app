@@ -2,8 +2,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
-import DarkModeToggle from '../components/DarkModeToggle';
-import HeartsDisplay from '../components/HeartsDisplay';
 import { updateUserHearts } from '../lib/hearts';
 import { CHALLENGE_TYPES } from '../lib/challenges';
 
@@ -58,164 +56,213 @@ export default function Challenges() {
       title: 'Scam vs Safe',
       emoji: '⚡',
       description: 'Quick judgment calls - decide if scenarios are scams or safe in 10 seconds each',
-      skill: 'Pressure Resistance',
       difficulty: 'Easy',
       xp: 100,
-      color: 'from-blue-500 to-cyan-500'
+      color: 'from-blue-500 to-cyan-500',
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-300'
     },
     {
       type: CHALLENGE_TYPES.SPOT_RED_FLAGS,
       title: 'Spot the Red Flags',
       emoji: '🚩',
       description: 'Identify all suspicious elements in emails, messages, and posts',
-      skill: 'Deception Detection',
       difficulty: 'Medium',
       xp: 150,
-      color: 'from-red-500 to-pink-500'
+      color: 'from-red-500 to-pink-500',
+      bgColor: 'bg-red-50',
+      borderColor: 'border-red-300'
     },
     {
       type: CHALLENGE_TYPES.FAKE_INBOX,
       title: 'Fake Inbox',
       emoji: '📧',
       description: 'Review multiple messages and identify which are scams',
-      skill: 'Pattern Recognition',
       difficulty: 'Medium',
       xp: 200,
-      color: 'from-purple-500 to-indigo-500'
+      color: 'from-purple-500 to-indigo-500',
+      bgColor: 'bg-purple-50',
+      borderColor: 'border-purple-300'
     },
     {
       type: CHALLENGE_TYPES.PATTERN_MATCH,
       title: 'Pattern Matching',
       emoji: '🧩',
       description: 'Connect scam types with their tactics and techniques',
-      skill: 'Manipulation Awareness',
       difficulty: 'Hard',
       xp: 250,
-      color: 'from-yellow-500 to-orange-500'
+      color: 'from-yellow-500 to-orange-500',
+      bgColor: 'bg-yellow-50',
+      borderColor: 'border-yellow-300'
     }
   ];
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400 text-lg">Loading challenges...</p>
-        </div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <header className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm sticky top-0 z-50 border-b border-gray-100 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-3 md:px-4 py-3 md:py-4">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 md:gap-3">
-              <img src="/logo.png" alt="ScamSmart" className="w-10 h-10 md:w-12 md:h-12 drop-shadow-md" />
+            <div className="flex items-center gap-3">
+              <img src="/logo.png" alt="ScamSmart" className="w-12 h-12" />
               <div>
-                <h1 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white">Challenges</h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">Test Your Skills</p>
+                <h1 className="text-2xl font-bold text-gray-900">ScamSmart</h1>
+                <p className="text-sm text-gray-600">Practice</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 md:gap-4">
-              <HeartsDisplay 
-                hearts={progress?.hearts || 0}
-                isPremium={progress?.is_premium || false}
-                lastRegenTime={progress?.last_heart_regen}
-                compact={true}
-              />
-              <DarkModeToggle />
+            <nav className="flex items-center gap-6">
               <button 
-                onClick={() => router.push('/dashboard')} 
-                className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors text-sm md:text-base"
+                onClick={() => router.push('/learn')}
+                className="text-lg font-semibold text-gray-700 hover:text-gray-900"
               >
-                Dashboard
+                📚 Learn
               </button>
               <button 
-                onClick={handleSignOut} 
-                className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors text-sm md:text-base"
+                onClick={() => router.push('/challenges')}
+                className="text-lg font-semibold text-blue-600"
+              >
+                🎯 Practice
+              </button>
+              <button 
+                onClick={() => router.push('/leaderboard')}
+                className="text-lg font-semibold text-gray-700 hover:text-gray-900"
+              >
+                🏆 Compete
+              </button>
+              <button 
+                onClick={() => router.push('/profile')}
+                className="text-lg font-semibold text-gray-700 hover:text-gray-900"
+              >
+                👤 Profile
+              </button>
+              {!progress?.is_premium && (
+                <button 
+                  onClick={() => router.push('/premium')}
+                  className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold px-4 py-2 rounded-lg text-base"
+                >
+                  ⭐ Upgrade
+                </button>
+              )}
+              <button 
+                onClick={handleSignOut}
+                className="text-lg font-semibold text-gray-700 hover:text-gray-900"
               >
                 Sign Out
               </button>
-            </div>
+            </nav>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-8">
+      <main className="max-w-6xl mx-auto px-6 py-12">
+        {/* Header */}
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-black text-gray-900 dark:text-white mb-4">
-            Choose Your Challenge
+          <div className="text-7xl mb-6">🎯</div>
+          <h2 className="text-5xl font-black text-gray-900 mb-4">
+            Practice Your Skills
           </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
-            Test your scam detection skills and earn XP!
+          <p className="text-2xl text-gray-600 max-w-2xl mx-auto">
+            Test your scam detection abilities with interactive challenges
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Hearts Display */}
+        {!progress?.is_premium && (
+          <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 mb-8 text-center">
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <span className="text-4xl">❤️</span>
+              <span className="text-4xl font-black text-red-600">{progress?.hearts || 0} / 5</span>
+            </div>
+            <p className="text-lg text-gray-700">
+              You lose hearts when you get answers wrong. Hearts regenerate 1 per hour.
+            </p>
+            <button
+              onClick={() => router.push('/premium')}
+              className="mt-4 bg-yellow-500 hover:bg-yellow-600 text-white font-bold px-6 py-3 rounded-lg text-lg"
+            >
+              ⭐ Get Unlimited Hearts with Premium
+            </button>
+          </div>
+        )}
+
+        {/* Challenge Grid */}
+        <div className="grid md:grid-cols-2 gap-6 mb-12">
           {challengeModes.map((mode) => (
             <button
               key={mode.type}
               onClick={() => router.push(`/challenges/${mode.type}`)}
-              className="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-2xl transition-all transform hover:scale-105"
+              className="group bg-white rounded-2xl shadow-md border-2 border-gray-200 overflow-hidden hover:shadow-xl hover:border-blue-400 transition-all text-left"
             >
               {/* Gradient Header */}
-              <div className={`bg-gradient-to-r ${mode.color} p-6 text-white`}>
-                <div className="text-6xl mb-3">{mode.emoji}</div>
-                <h3 className="text-2xl font-black mb-2">{mode.title}</h3>
-                <p className="text-white/90 text-sm">{mode.description}</p>
+              <div className={`bg-gradient-to-r ${mode.color} p-8`}>
+                <div className="text-7xl mb-4">{mode.emoji}</div>
+                <h3 className="text-3xl font-black text-white mb-2">{mode.title}</h3>
               </div>
 
-              {/* Details */}
-              <div className="p-6">
-                <div className="grid grid-cols-3 gap-4 mb-4">
+              {/* Content */}
+              <div className="p-8">
+                <p className="text-lg text-gray-700 mb-6">
+                  {mode.description}
+                </p>
+
+                {/* Stats */}
+                <div className="flex items-center gap-6 mb-6">
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Skill</p>
-                    <p className="font-bold text-gray-900 dark:text-white text-sm">{mode.skill}</p>
+                    <p className="text-sm text-gray-500 mb-1">Difficulty</p>
+                    <p className="text-lg font-bold text-gray-900">{mode.difficulty}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Difficulty</p>
-                    <p className="font-bold text-gray-900 dark:text-white text-sm">{mode.difficulty}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Reward</p>
-                    <p className="font-bold text-yellow-600 dark:text-yellow-400 text-sm">+{mode.xp} XP</p>
+                    <p className="text-sm text-gray-500 mb-1">Reward</p>
+                    <p className="text-lg font-bold text-yellow-600">+{mode.xp} XP</p>
                   </div>
                 </div>
 
-                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
-                  <span className="text-blue-600 dark:text-blue-400 font-bold text-sm">
-                    Start Challenge →
-                  </span>
+                {/* Start Button */}
+                <div className="bg-blue-600 group-hover:bg-blue-700 text-white font-bold text-center py-4 rounded-xl text-xl transition-colors">
+                  Start Challenge →
                 </div>
               </div>
             </button>
           ))}
         </div>
 
-        {/* Info Box */}
-        <div className="mt-12 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-2xl p-6">
-          <h3 className="text-lg font-black text-gray-900 dark:text-white mb-3">💡 How Challenges Work</h3>
-          <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-            <li className="flex items-start gap-2">
-              <span className="text-blue-600 dark:text-blue-400 mt-1">•</span>
-              <span>Each challenge tests specific scam detection skills</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-blue-600 dark:text-blue-400 mt-1">•</span>
-              <span>Wrong answers cost hearts - answer carefully!</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-blue-600 dark:text-blue-400 mt-1">•</span>
-              <span>Earn XP and improve your skill ratings</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-blue-600 dark:text-blue-400 mt-1">•</span>
-              <span>Premium members get unlimited hearts for practice</span>
-            </li>
-          </ul>
+        {/* How It Works */}
+        <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-8">
+          <h3 className="text-3xl font-black text-gray-900 mb-6 text-center">
+            How Challenges Work
+          </h3>
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="text-center">
+              <div className="text-5xl mb-3">🎯</div>
+              <h4 className="text-xl font-bold text-gray-900 mb-2">Test Your Skills</h4>
+              <p className="text-base text-gray-600">
+                Each challenge tests specific scam detection abilities
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="text-5xl mb-3">❤️</div>
+              <h4 className="text-xl font-bold text-gray-900 mb-2">Use Hearts</h4>
+              <p className="text-base text-gray-600">
+                Wrong answers cost hearts. Answer carefully!
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="text-5xl mb-3">⭐</div>
+              <h4 className="text-xl font-bold text-gray-900 mb-2">Earn Rewards</h4>
+              <p className="text-base text-gray-600">
+                Get XP and improve your skills with each challenge
+              </p>
+            </div>
+          </div>
         </div>
       </main>
     </div>
