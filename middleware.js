@@ -44,27 +44,27 @@ export function middleware(request) {
 
   // Root -> dashboard if logged in else signup
   if (pathname === "/") {
-    url.pathname = loggedIn ? "/dashboard" : "/signup";
+    url.pathname = loggedIn ? "/dashboard" : "/signin";
     return NextResponse.redirect(url);
   }
 
   // /browse -> dashboard if logged in else signup
   if (pathname === "/browse" || pathname.startsWith("/browse/")) {
-    url.pathname = loggedIn ? "/dashboard" : "/signup";
+    url.pathname = loggedIn ? "/dashboard" : "/signin";
     return NextResponse.redirect(url);
   }
 
   // Protect /dashboard
   if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
     if (!loggedIn) {
-      url.pathname = "/signup";
+      url.pathname = "/signin";
       url.searchParams.set("next", pathname);
       return NextResponse.redirect(url);
     }
   }
 
   // Optional polish: if logged in, keep them out of signup/signin
-  if (loggedIn && (pathname === "/signup" || pathname === "/signin")) {
+  if (loggedIn && (pathname === "/signin" || pathname === "/signin")) {
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
   }
