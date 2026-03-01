@@ -89,7 +89,7 @@ export default function SignIn() {
 
         if (error) throw error
 
-        window.location.href = '/dashboard'
+        await new Promise(r => setTimeout(r, 500)); window.location.href = '/dashboard'
       }
     } catch (error) {
       setError(error.message)
