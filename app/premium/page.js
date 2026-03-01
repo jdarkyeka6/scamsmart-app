@@ -60,7 +60,7 @@ export default function Premium() {
         body: JSON.stringify({
           userId: user.id,
           email: user.email,
-          priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID || 'price_1QpOCCRwX6gXhn0IqCUJEyAr' // Your Stripe Price ID
+          priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID || 'price_1T66ARLPBnUeKZYz7XUIiV1B' // Your Stripe Price ID
         }),
       });
 
