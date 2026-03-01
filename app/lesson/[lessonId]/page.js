@@ -76,7 +76,7 @@ export default function Lesson() {
     }
 
     const currentQuestion = lesson.questions[currentQuestionIndex];
-    const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
+    const isCorrect = selectedAnswer === currentQuestion.correct;
 
     const newAnswers = [...answers, { correct: isCorrect }];
     setAnswers(newAnswers);
@@ -305,13 +305,13 @@ export default function Lesson() {
 
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 mb-6">
           <h2 className="text-3xl font-bold text-gray-900 mb-8">
-            {currentQuestion.question}
+            {currentQuestion.prompt}
           </h2>
 
           <div className="space-y-4">
             {currentQuestion.options.map((option, index) => {
               const isSelected = selectedAnswer === index;
-              const isCorrect = index === currentQuestion.correctAnswer;
+              const isCorrect = index === currentQuestion.correct;
               const showCorrect = showResult && isCorrect;
               const showWrong = showResult && isSelected && !isCorrect;
 
@@ -342,12 +342,12 @@ export default function Lesson() {
 
           {showResult && (
             <div className={`mt-6 p-6 rounded-xl border-2 ${
-              selectedAnswer === currentQuestion.correctAnswer
+              selectedAnswer === currentQuestion.correct
                 ? 'bg-green-50 border-green-300'
                 : 'bg-red-50 border-red-300'
             }`}>
               <p className="text-lg font-bold text-gray-900 mb-2">
-                {selectedAnswer === currentQuestion.correctAnswer ? '✅ Correct!' : '❌ Incorrect'}
+                {selectedAnswer === currentQuestion.correct ? '✅ Correct!' : '❌ Incorrect'}
               </p>
               <p className="text-base text-gray-700">
                 {currentQuestion.explanation}
