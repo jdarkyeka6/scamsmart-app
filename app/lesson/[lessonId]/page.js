@@ -78,12 +78,10 @@ export default function Lesson() {
     const currentQuestion = lesson.questions[currentQuestionIndex];
     const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
 
-    // Record answer
     const newAnswers = [...answers, { correct: isCorrect }];
     setAnswers(newAnswers);
     setShowResult(true);
 
-    // Lose heart if wrong and not premium
     if (!isCorrect && !progress?.is_premium) {
       const result = await loseHeart(user.id, supabase);
       
@@ -93,7 +91,6 @@ export default function Lesson() {
       }
     }
 
-    // Auto-advance after 3 seconds
     setTimeout(() => {
       if (currentQuestionIndex < lesson.questions.length - 1) {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
@@ -112,7 +109,6 @@ export default function Lesson() {
     const accuracy = (correctCount / lesson.questions.length) * 100;
     const xpEarned = Math.round((accuracy / 100) * (lesson.xp || 100));
 
-    // Save completion
     await supabase.from('lesson_completions').upsert([
       {
         user_id: user.id,
@@ -121,7 +117,6 @@ export default function Lesson() {
       }
     ]);
 
-    // Update progress
     await supabase
       .from('user_progress')
       .update({
@@ -130,7 +125,6 @@ export default function Lesson() {
       })
       .eq('user_id', user.id);
 
-    // Update streak
     const today = new Date().toDateString();
     const lastActive = progress?.last_active ? new Date(progress.last_active).toDateString() : null;
     const yesterday = new Date(Date.now() - 86400000).toDateString();
@@ -157,12 +151,10 @@ export default function Lesson() {
     const { sectionIndex, lessonIndex } = parseLessonId(lessonId);
     const section = sections[sectionIndex];
 
-    // Next lesson in same section
     if (lessonIndex < section.lessons.length - 1) {
       return getLessonId(sectionIndex, lessonIndex + 1);
     }
 
-    // First lesson of next section
     if (sectionIndex < sections.length - 1) {
       return getLessonId(sectionIndex + 1, 0);
     }
@@ -205,7 +197,6 @@ export default function Lesson() {
             <p className="text-xl text-gray-600">{lesson.title}</p>
           </div>
 
-          {/* Stats */}
           <div className="grid grid-cols-3 gap-4 mb-8">
             <div className="bg-blue-50 rounded-xl p-6 text-center border border-blue-200">
               <p className="text-base text-gray-600 mb-2">Score</p>
@@ -221,7 +212,6 @@ export default function Lesson() {
             </div>
           </div>
 
-          {/* Performance Message */}
           <div className={`rounded-xl p-6 mb-8 border-2 ${
             accuracy >= 80 
               ? 'bg-green-50 border-green-300'
@@ -238,7 +228,6 @@ export default function Lesson() {
             </p>
           </div>
 
-          {/* Navigation Buttons */}
           <div className="space-y-3">
             {nextLessonId ? (
               <button
@@ -273,7 +262,6 @@ export default function Lesson() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Simple Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -299,7 +287,6 @@ export default function Lesson() {
         </div>
       </header>
 
-      {/* Progress Bar */}
       <div className="bg-gray-200 h-2">
         <div
           className="bg-blue-600 h-2 transition-all duration-300"
@@ -307,9 +294,7 @@ export default function Lesson() {
         ></div>
       </div>
 
-      {/* Main Content */}
       <main className="max-w-4xl mx-auto px-6 py-12">
-        {/* Lesson Title (first question only) */}
         {currentQuestionIndex === 0 && (
           <div className="mb-8 text-center">
             <div className="text-5xl mb-4">{lesson.sectionEmoji}</div>
@@ -318,13 +303,11 @@ export default function Lesson() {
           </div>
         )}
 
-        {/* Question Card */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 mb-6">
           <h2 className="text-3xl font-bold text-gray-900 mb-8">
             {currentQuestion.question}
           </h2>
 
-          {/* Answer Options */}
           <div className="space-y-4">
             {currentQuestion.options.map((option, index) => {
               const isSelected = selectedAnswer === index;
@@ -339,12 +322,12 @@ export default function Lesson() {
                   disabled={showResult}
                   className={`w-full text-left p-6 rounded-xl border-2 transition-all text-lg font-semibold ${
                     showCorrect
-                      ? 'bg-green-50 border-green-500'
+                      ? 'bg-green-50 border-green-500 text-gray-900'
                       : showWrong
-                      ? 'bg-red-50 border-red-500'
+                      ? 'bg-red-50 border-red-500 text-gray-900'
                       : isSelected
-                      ? 'bg-blue-50 border-blue-500'
-                      : 'bg-white border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                      ? 'bg-blue-50 border-blue-500 text-gray-900'
+                      : 'bg-white border-gray-300 hover:border-blue-400 hover:bg-blue-50 text-gray-900'
                   } ${showResult ? 'cursor-default' : 'cursor-pointer'}`}
                 >
                   <div className="flex items-center justify-between">
@@ -357,7 +340,6 @@ export default function Lesson() {
             })}
           </div>
 
-          {/* Explanation */}
           {showResult && (
             <div className={`mt-6 p-6 rounded-xl border-2 ${
               selectedAnswer === currentQuestion.correctAnswer
@@ -374,7 +356,6 @@ export default function Lesson() {
           )}
         </div>
 
-        {/* Submit Button */}
         {!showResult && (
           <button
             onClick={handleSubmitAnswer}
@@ -385,7 +366,6 @@ export default function Lesson() {
           </button>
         )}
 
-        {/* Auto-advancing message */}
         {showResult && (
           <div className="text-center">
             <p className="text-gray-600 text-lg">
