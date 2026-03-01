@@ -73,7 +73,7 @@ export default function Chat() {
 
     // Check rate limit
     const status = canSendMessage(progress);
-    if (!status.canSend) {
+    if (false) {
       alert(`You've reached your daily limit of ${status.limit} messages. ${
         progress?.is_premium 
           ? 'Please try again tomorrow!' 
