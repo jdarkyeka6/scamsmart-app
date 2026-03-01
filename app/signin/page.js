@@ -89,7 +89,7 @@ export default function SignIn() {
 
         if (error) throw error
 
-        router.push('/dashboard')
+        window.location.href = '/dashboard'
       }
     } catch (error) {
       setError(error.message)
