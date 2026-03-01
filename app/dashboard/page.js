@@ -138,7 +138,7 @@ https://scamsmart.click`
               />
               <DarkModeToggle />
               <button 
-                onClick={() => router.push('/browse')} 
+                onClick={() => router.push('/learn')} 
                 className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors text-sm md:text-base"
               >
                 Browse
@@ -306,7 +306,7 @@ https://scamsmart.click`
             Master scam detection with {115 - (progress?.lessons_completed || 0)} lessons waiting for you!
           </p>
           <button
-            onClick={() => router.push('/browse')}
+            onClick={() => router.push('/learn')}
             className="bg-white text-blue-600 px-6 md:px-8 py-3 md:py-4 rounded-lg font-black text-base md:text-lg hover:bg-gray-100 transition-colors shadow-lg"
           >
             Browse All Lessons →
