@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 const anthropic = new Anthropic({
@@ -8,16 +8,15 @@ const anthropic = new Anthropic({
 })
 
 // In-memory rate limiter (resets on server restart)
-// For production, replace with Redis or Upstash
+// For production, swap Map for Upstash Redis
 const rateLimitMap = new Map()
-const RATE_LIMIT = 20        // max requests
+const RATE_LIMIT = 20         // max requests
 const RATE_WINDOW = 60 * 1000 // per 60 seconds
 
 function isRateLimited(userId) {
   const now = Date.now()
   const userLimit = rateLimitMap.get(userId) || { count: 0, windowStart: now }
 
-  // Reset window if expired
   if (now - userLimit.windowStart > RATE_WINDOW) {
     userLimit.count = 0
     userLimit.windowStart = now
@@ -55,7 +54,25 @@ You can now search the web to evaluate URLs. When a user asks about a website:
 export async function POST(request) {
   try {
     // ── 1. Auth check ──────────────────────────────────────────────
-    const supabase = createRouteHandlerClient({ cookies })
+    const cookieStore = cookies()
+
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          },
+        },
+      }
+    )
+
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
     if (sessionError || !session) {
@@ -86,7 +103,6 @@ export async function POST(request) {
       )
     }
 
-    // Limit message length to prevent prompt stuffing attacks
     if (message.length > 2000) {
       return NextResponse.json(
         { error: 'Message too long (max 2000 characters).' },
@@ -94,7 +110,7 @@ export async function POST(request) {
       )
     }
 
-    // Limit conversation history depth to prevent token abuse
+    // Cap history depth to prevent token abuse
     const trimmedHistory = conversationHistory.slice(-10)
 
     // ── 4. Call Claude ─────────────────────────────────────────────
