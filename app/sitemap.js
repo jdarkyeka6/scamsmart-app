@@ -1,11 +1,11 @@
 export default function sitemap() {
   return [
     {
-      url: 'https://scamsmart.click',
+      url: 'https://www.scamsmart.click',
       lastModified: new Date(),
     },
     {
-      url: 'https://scamsmart.click/scamsmart',
+      url: 'https://www.scamsmart.click/scamsmart',
       lastModified: new Date(),
     },
   ]
