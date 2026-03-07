@@ -54,7 +54,7 @@ You can now search the web to evaluate URLs. When a user asks about a website:
 export async function POST(request) {
   try {
     // ── 1. Auth check ──────────────────────────────────────────────
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -62,12 +62,12 @@ export async function POST(request) {
       {
         cookies: {
           getAll() {
-            return cookieStore.getAll()
+            return cookieStore.getAll().map(({ name, value }) => ({ name, value }))
           },
           setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
+            cookiesToSet.forEach(({ name, value, options }) => {
+              try { cookieStore.set(name, value, options) } catch {}
+            })
           },
         },
       }
