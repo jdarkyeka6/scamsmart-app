@@ -1,11 +1,127 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import DarkModeToggle from '../components/DarkModeToggle'
 import HeartsDisplay from '../components/HeartsDisplay'
 import { updateUserHearts } from '../lib/hearts'
 import { LessonPathCompact } from '../components/LessonPath'
+
+// ─── Tutorial Modal ────────────────────────────────────────────────────────────
+function TutorialModal({ onFinish, learnButtonRef }) {
+  const [step, setStep] = useState(0)
+
+  const steps = [
+    {
+      title: "👋 Welcome to ScamSmart!",
+      body: "You're about to learn how to spot and avoid scams. Let's take a quick tour so you know where everything is.",
+      arrow: null,
+      position: 'center',
+    },
+    {
+      title: "❤️ Hearts System",
+      body: "You have 5 hearts. Every time you answer a question wrong in a lesson, you lose one heart. Hearts regenerate 1 per hour. Run out and you'll need to wait — or go Premium for unlimited hearts!",
+      arrow: 'top-right',
+      position: 'center',
+    },
+    {
+      title: "📚 Start Learning",
+      body: "Hit the \"Browse All Lessons\" button below to jump into your first lesson. The first lesson is a free tutorial — no hearts at risk!",
+      arrow: 'bottom',
+      position: 'center',
+    },
+    {
+      title: "🚀 You're ready!",
+      body: "That's all you need to know. Good luck — and remember: Think Before You Click!",
+      arrow: null,
+      position: 'center',
+    },
+  ]
+
+  const current = steps[step]
+  const isLast = step === steps.length - 1
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+
+      {/* Modal card */}
+      <div className="relative z-10 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-8 max-w-md w-full mx-4">
+
+        {/* Step indicator */}
+        <div className="flex justify-center gap-2 mb-6">
+          {steps.map((_, i) => (
+            <div
+              key={i}
+              className={`h-2 rounded-full transition-all duration-300 ${
+                i === step
+                  ? 'w-8 bg-blue-600'
+                  : i < step
+                  ? 'w-2 bg-blue-300'
+                  : 'w-2 bg-gray-200 dark:bg-gray-600'
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* Arrow indicator for hearts (step 1) */}
+        {current.arrow === 'top-right' && (
+          <div className="flex justify-end mb-2 pr-4">
+            <div className="flex flex-col items-center text-red-500">
+              <span className="text-2xl animate-bounce">↑</span>
+              <span className="text-xs font-bold text-red-500">Your Hearts</span>
+            </div>
+          </div>
+        )}
+
+        <div className="text-center">
+          <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-3">
+            {current.title}
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300 text-base leading-relaxed mb-8">
+            {current.body}
+          </p>
+
+          {/* Arrow indicator for learn button (step 2) */}
+          {current.arrow === 'bottom' && (
+            <div className="flex justify-center mb-4 text-blue-500">
+              <div className="flex flex-col items-center">
+                <span className="text-xs font-bold text-blue-500 mb-1">That button!</span>
+                <span className="text-2xl animate-bounce">↓</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-3">
+          {step > 0 && (
+            <button
+              onClick={() => setStep(s => s - 1)}
+              className="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-bold py-3 rounded-xl transition-colors"
+            >
+              ← Back
+            </button>
+          )}
+          <button
+            onClick={() => {
+              if (isLast) {
+                onFinish()
+              } else {
+                setStep(s => s + 1)
+              }
+            }}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors"
+          >
+            {isLast ? "Let's Go! 🚀" : 'Next →'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
   const router = useRouter()
@@ -14,6 +130,7 @@ export default function Dashboard() {
   const [completedLessons, setCompletedLessons] = useState([])
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
+  const [showTutorial, setShowTutorial] = useState(false)
 
   useEffect(() => {
     checkUser()
@@ -35,7 +152,7 @@ export default function Dashboard() {
     try {
       // Update hearts first (handles regeneration)
       await updateUserHearts(userId, supabase)
-      
+
       const { data } = await supabase
         .from('user_progress')
         .select('*')
@@ -43,6 +160,11 @@ export default function Dashboard() {
         .single()
 
       setProgress(data)
+
+      // Show tutorial if this is their first login
+      if (data && !data.has_seen_tutorial) {
+        setShowTutorial(true)
+      }
 
       // Load completed lessons for lesson path
       const { data: lessons } = await supabase
@@ -55,6 +177,17 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Error loading progress:', error)
       setLoading(false)
+    }
+  }
+
+  const handleTutorialFinish = async () => {
+    setShowTutorial(false)
+    // Mark tutorial as seen in DB
+    if (user) {
+      await supabase
+        .from('user_progress')
+        .update({ has_seen_tutorial: true })
+        .eq('user_id', user.id)
     }
   }
 
@@ -118,6 +251,12 @@ https://scamsmart.click`
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+
+      {/* Tutorial modal — shown on first login */}
+      {showTutorial && (
+        <TutorialModal onFinish={handleTutorialFinish} />
+      )}
+
       <header className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm sticky top-0 z-50 border-b border-gray-100 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-3 md:px-4 py-3 md:py-4">
           <div className="flex items-center justify-between">
@@ -130,21 +269,21 @@ https://scamsmart.click`
             </div>
 
             <div className="flex items-center gap-2 md:gap-4">
-              <HeartsDisplay 
+              <HeartsDisplay
                 hearts={progress?.hearts || 0}
                 isPremium={progress?.is_premium || false}
                 lastRegenTime={progress?.last_heart_regen}
                 compact={true}
               />
               <DarkModeToggle />
-              <button 
-                onClick={() => router.push('/learn')} 
+              <button
+                onClick={() => router.push('/learn')}
                 className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors text-sm md:text-base"
               >
                 Browse
               </button>
-              <button 
-                onClick={handleSignOut} 
+              <button
+                onClick={handleSignOut}
                 className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors text-sm md:text-base"
               >
                 Sign Out
@@ -164,26 +303,10 @@ https://scamsmart.click`
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
-          <QuickAction
-            icon="🎯"
-            label="Daily Challenge"
-            onClick={() => router.push('/daily-challenge')}
-          />
-          <QuickAction
-            icon="💬"
-            label="Give Feedback"
-            onClick={() => router.push('/premium-feedback')}
-          />
-          <QuickAction
-            icon="🎓"
-            label="Certificates"
-            onClick={() => router.push('/certificates')}
-          />
-          <QuickAction
-            icon="🎁"
-            label="Refer Friends"
-            onClick={() => router.push('/referrals')}
-          />
+          <QuickAction icon="🎯" label="Daily Challenge" onClick={() => router.push('/daily-challenge')} />
+          <QuickAction icon="💬" label="Give Feedback" onClick={() => router.push('/premium-feedback')} />
+          <QuickAction icon="🎓" label="Certificates" onClick={() => router.push('/certificates')} />
+          <QuickAction icon="🎁" label="Refer Friends" onClick={() => router.push('/referrals')} />
         </div>
 
         {/* Stats Grid */}
@@ -196,7 +319,7 @@ https://scamsmart.click`
 
         {/* Hearts Display */}
         <div className="mb-6 md:mb-8">
-          <HeartsDisplay 
+          <HeartsDisplay
             hearts={progress?.hearts || 0}
             isPremium={progress?.is_premium || false}
             lastRegenTime={progress?.last_heart_regen}
@@ -212,58 +335,25 @@ https://scamsmart.click`
           </p>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
-            <button
-              onClick={() => handleShare('twitter')}
-              className="flex items-center justify-center gap-1 md:gap-2 bg-blue-500 hover:bg-blue-600 text-white px-2 md:px-4 py-2 md:py-3 rounded-lg font-semibold transition-colors text-xs md:text-sm"
-            >
-              <span>🐦</span>
-              <span className="hidden sm:inline">Twitter</span>
+            <button onClick={() => handleShare('twitter')} className="flex items-center justify-center gap-1 md:gap-2 bg-blue-500 hover:bg-blue-600 text-white px-2 md:px-4 py-2 md:py-3 rounded-lg font-semibold transition-colors text-xs md:text-sm">
+              <span>🐦</span><span className="hidden sm:inline">Twitter</span>
             </button>
-
-            <button
-              onClick={() => handleShare('facebook')}
-              className="flex items-center justify-center gap-1 md:gap-2 bg-blue-600 hover:bg-blue-700 text-white px-2 md:px-4 py-2 md:py-3 rounded-lg font-semibold transition-colors text-xs md:text-sm"
-            >
-              <span>📘</span>
-              <span className="hidden sm:inline">Facebook</span>
+            <button onClick={() => handleShare('facebook')} className="flex items-center justify-center gap-1 md:gap-2 bg-blue-600 hover:bg-blue-700 text-white px-2 md:px-4 py-2 md:py-3 rounded-lg font-semibold transition-colors text-xs md:text-sm">
+              <span>📘</span><span className="hidden sm:inline">Facebook</span>
             </button>
-
-            <button
-              onClick={() => handleShare('linkedin')}
-              className="flex items-center justify-center gap-1 md:gap-2 bg-blue-700 hover:bg-blue-800 text-white px-2 md:px-4 py-2 md:py-3 rounded-lg font-semibold transition-colors text-xs md:text-sm"
-            >
-              <span>💼</span>
-              <span className="hidden sm:inline">LinkedIn</span>
+            <button onClick={() => handleShare('linkedin')} className="flex items-center justify-center gap-1 md:gap-2 bg-blue-700 hover:bg-blue-800 text-white px-2 md:px-4 py-2 md:py-3 rounded-lg font-semibold transition-colors text-xs md:text-sm">
+              <span>💼</span><span className="hidden sm:inline">LinkedIn</span>
             </button>
-
-            <button
-              onClick={() => handleShare('gmail')}
-              className="flex items-center justify-center gap-1 md:gap-2 bg-red-500 hover:bg-red-600 text-white px-2 md:px-4 py-2 md:py-3 rounded-lg font-semibold transition-colors text-xs md:text-sm"
-            >
-              <span>📧</span>
-              <span className="hidden sm:inline">Gmail</span>
+            <button onClick={() => handleShare('gmail')} className="flex items-center justify-center gap-1 md:gap-2 bg-red-500 hover:bg-red-600 text-white px-2 md:px-4 py-2 md:py-3 rounded-lg font-semibold transition-colors text-xs md:text-sm">
+              <span>📧</span><span className="hidden sm:inline">Gmail</span>
             </button>
-
-            <button
-              onClick={() => handleShare('whatsapp')}
-              className="flex items-center justify-center gap-1 md:gap-2 bg-green-500 hover:bg-green-600 text-white px-2 md:px-4 py-2 md:py-3 rounded-lg font-semibold transition-colors text-xs md:text-sm"
-            >
-              <span>💬</span>
-              <span className="hidden sm:inline">WhatsApp</span>
+            <button onClick={() => handleShare('whatsapp')} className="flex items-center justify-center gap-1 md:gap-2 bg-green-500 hover:bg-green-600 text-white px-2 md:px-4 py-2 md:py-3 rounded-lg font-semibold transition-colors text-xs md:text-sm">
+              <span>💬</span><span className="hidden sm:inline">WhatsApp</span>
             </button>
-
-            <button
-              onClick={() => handleShare('reddit')}
-              className="flex items-center justify-center gap-1 md:gap-2 bg-orange-500 hover:bg-orange-600 text-white px-2 md:px-4 py-2 md:py-3 rounded-lg font-semibold transition-colors text-xs md:text-sm"
-            >
-              <span>🤖</span>
-              <span className="hidden sm:inline">Reddit</span>
+            <button onClick={() => handleShare('reddit')} className="flex items-center justify-center gap-1 md:gap-2 bg-orange-500 hover:bg-orange-600 text-white px-2 md:px-4 py-2 md:py-3 rounded-lg font-semibold transition-colors text-xs md:text-sm">
+              <span>🤖</span><span className="hidden sm:inline">Reddit</span>
             </button>
-
-            <button
-              onClick={copyToClipboard}
-              className="col-span-2 flex items-center justify-center gap-1 md:gap-2 bg-gray-700 hover:bg-gray-800 text-white px-2 md:px-4 py-2 md:py-3 rounded-lg font-semibold transition-colors text-xs md:text-sm"
-            >
+            <button onClick={copyToClipboard} className="col-span-2 flex items-center justify-center gap-1 md:gap-2 bg-gray-700 hover:bg-gray-800 text-white px-2 md:px-4 py-2 md:py-3 rounded-lg font-semibold transition-colors text-xs md:text-sm">
               <span>{copied ? '✅' : '📋'}</span>
               <span>{copied ? 'Copied!' : 'Copy Link'}</span>
             </button>
@@ -280,16 +370,10 @@ https://scamsmart.click`
                   Share your feedback and get 1 week of Premium absolutely FREE! Or upgrade for just $5/month.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
-                  <button
-                    onClick={() => router.push('/premium-feedback')}
-                    className="bg-white text-yellow-600 px-4 md:px-6 py-2 md:py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors shadow-md text-sm md:text-base"
-                  >
+                  <button onClick={() => router.push('/premium-feedback')} className="bg-white text-yellow-600 px-4 md:px-6 py-2 md:py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors shadow-md text-sm md:text-base">
                     Give Feedback (FREE Premium!)
                   </button>
-                  <button
-                    onClick={() => router.push('/premium')}
-                    className="bg-yellow-600 text-white px-4 md:px-6 py-2 md:py-3 rounded-lg font-bold hover:bg-yellow-700 transition-colors shadow-md text-sm md:text-base"
-                  >
+                  <button onClick={() => router.push('/premium')} className="bg-yellow-600 text-white px-4 md:px-6 py-2 md:py-3 rounded-lg font-bold hover:bg-yellow-700 transition-colors shadow-md text-sm md:text-base">
                     Or Upgrade Now →
                   </button>
                 </div>
@@ -319,10 +403,7 @@ https://scamsmart.click`
 
 function QuickAction({ icon, label, onClick }) {
   return (
-    <button
-      onClick={onClick}
-      className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 md:p-6 border border-gray-100 dark:border-gray-700 hover:shadow-md hover:scale-105 transition-all text-center"
-    >
+    <button onClick={onClick} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 md:p-6 border border-gray-100 dark:border-gray-700 hover:shadow-md hover:scale-105 transition-all text-center">
       <div className="text-3xl md:text-4xl mb-2">{icon}</div>
       <p className="text-xs md:text-sm font-bold text-gray-900 dark:text-white">{label}</p>
     </button>

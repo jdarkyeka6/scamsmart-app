@@ -2,17 +2,31 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '../../../lib/supabase';
-import { sections, getLessonId, isLessonUnlocked } from '../../sections';
+import { getLessonData, parseLessonId, sections, getLessonId } from '../../sections';
+import { loseHeart } from '../../lib/hearts';
+import { OutOfHeartsModal } from '../../components/HeartsDisplay';
+import { getTimeUntilNextHeart, formatTimeRemaining } from '../../lib/hearts';
 
-export default function SectionDetail() {
+// Lessons that never cost hearts (tutorial/intro lessons)
+const HEART_FREE_LESSONS = ['01-general-scam-red-flags'];
+
+export default function Lesson() {
   const router = useRouter();
   const params = useParams();
-  const sectionId = params.sectionId;
-  
+  const lessonId = params.lessonId;
+
   const [user, setUser] = useState(null);
   const [progress, setProgress] = useState(null);
-  const [completedLessons, setCompletedLessons] = useState([]);
+  const [lesson, setLesson] = useState(null);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [showResult, setShowResult] = useState(false);
+  const [answers, setAnswers] = useState([]);
+  const [lessonComplete, setLessonComplete] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showOutOfHearts, setShowOutOfHearts] = useState(false);
+
+  const isHeartFree = HEART_FREE_LESSONS.includes(lessonId);
 
   useEffect(() => {
     checkUser();
@@ -27,11 +41,20 @@ export default function SectionDetail() {
     }
 
     setUser(user);
-    await loadProgress(user.id);
+    await loadLesson(user.id);
   };
 
-  const loadProgress = async (userId) => {
+  const loadLesson = async (userId) => {
     try {
+      const lessonData = getLessonData(lessonId);
+
+      if (!lessonData) {
+        router.push('/learn');
+        return;
+      }
+
+      setLesson(lessonData);
+
       const { data } = await supabase
         .from('user_progress')
         .select('*')
@@ -40,30 +63,121 @@ export default function SectionDetail() {
 
       setProgress(data);
 
-      const { data: lessons } = await supabase
-        .from('lesson_completions')
-        .select('lesson_id')
-        .eq('user_id', userId);
+      // Gate: block entry if out of hearts (unless premium or heart-free lesson)
+      if (!data?.is_premium && !isHeartFree && (data?.hearts ?? 0) <= 0) {
+        setShowOutOfHearts(true);
+      }
 
-      setCompletedLessons(lessons?.map(l => l.lesson_id) || []);
       setLoading(false);
     } catch (error) {
-      console.error('Error loading progress:', error);
+      console.error('Error loading lesson:', error);
       setLoading(false);
     }
   };
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push('/');
+  const handleAnswerSelect = (answerIndex) => {
+    if (showResult) return;
+    setSelectedAnswer(answerIndex);
   };
 
-  const handleLessonClick = (lessonId, isUnlocked) => {
-    if (!isUnlocked) {
-      alert('🔒 Complete previous lessons to unlock this one!');
+  const handleSubmitAnswer = async () => {
+    if (selectedAnswer === null) {
+      alert('Please select an answer!');
       return;
     }
-    router.push(`/lesson/${lessonId}`);
+
+    const currentQuestion = lesson.questions[currentQuestionIndex];
+    const isCorrect = selectedAnswer === currentQuestion.correct;
+
+    const newAnswers = [...answers, { correct: isCorrect }];
+    setAnswers(newAnswers);
+    setShowResult(true);
+
+    // Only deduct hearts if: wrong answer, not premium, not a heart-free lesson
+    if (!isCorrect && !progress?.is_premium && !isHeartFree) {
+      const result = await loseHeart(user.id, supabase);
+
+      // Update local progress so heart count shown in header is accurate
+      setProgress(prev => ({ ...prev, hearts: result.hearts }));
+
+      if (!result.canContinue) {
+        // Wait for the "incorrect" feedback to show briefly, then block
+        setTimeout(() => {
+          setShowOutOfHearts(true);
+        }, 1500);
+        return;
+      }
+    }
+
+    setTimeout(() => {
+      if (currentQuestionIndex < lesson.questions.length - 1) {
+        setCurrentQuestionIndex(currentQuestionIndex + 1);
+        setSelectedAnswer(null);
+        setShowResult(false);
+      } else {
+        completeLesson(newAnswers);
+      }
+    }, 3000);
+  };
+
+  const completeLesson = async (finalAnswers) => {
+    setLessonComplete(true);
+
+    const correctCount = finalAnswers.filter(a => a.correct).length;
+    const accuracy = (correctCount / lesson.questions.length) * 100;
+    const xpEarned = Math.round((accuracy / 100) * (lesson.xp || 100));
+
+    await supabase.from('lesson_completions').upsert([
+      {
+        user_id: user.id,
+        lesson_id: lessonId,
+        completed_at: new Date().toISOString()
+      }
+    ]);
+
+    await supabase
+      .from('user_progress')
+      .update({
+        total_xp: (progress?.total_xp || 0) + xpEarned,
+        lessons_completed: (progress?.lessons_completed || 0) + 1
+      })
+      .eq('user_id', user.id);
+
+    const today = new Date().toDateString();
+    const lastActive = progress?.last_active ? new Date(progress.last_active).toDateString() : null;
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+
+    let newStreak = progress?.streak_count || 0;
+    if (lastActive !== today) {
+      if (lastActive === yesterday) {
+        newStreak += 1;
+      } else {
+        newStreak = 1;
+      }
+
+      await supabase
+        .from('user_progress')
+        .update({
+          streak_count: newStreak,
+          last_active: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+    }
+  };
+
+  const findNextLesson = () => {
+    const { sectionIndex, lessonIndex } = parseLessonId(lessonId);
+    const section = sections[sectionIndex];
+
+    if (lessonIndex < section.lessons.length - 1) {
+      return getLessonId(sectionIndex, lessonIndex + 1);
+    }
+
+    if (sectionIndex < sections.length - 1) {
+      return getLessonId(sectionIndex + 1, 0);
+    }
+
+    return null;
   };
 
   if (loading) {
@@ -74,249 +188,218 @@ export default function SectionDetail() {
     );
   }
 
-  // Find the section
-  const sectionIndex = sections.findIndex(s => s.id === sectionId);
-  if (sectionIndex === -1) {
+  if (showOutOfHearts) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-2xl text-gray-600 mb-4">Section not found</p>
-          <button
-            onClick={() => router.push('/learn')}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold"
-          >
-            Back to Learn
-          </button>
+      <OutOfHeartsModal
+        onClose={() => router.push('/learn')}
+        onUpgrade={() => router.push('/premium')}
+        timeRemaining={formatTimeRemaining(getTimeUntilNextHeart(progress?.last_heart_regen))}
+      />
+    );
+  }
+
+  if (lessonComplete) {
+    const correctCount = answers.filter(a => a.correct).length;
+    const accuracy = (correctCount / lesson.questions.length) * 100;
+    const xpEarned = Math.round((accuracy / 100) * (lesson.xp || 100));
+    const nextLessonId = findNextLesson();
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 flex items-center justify-center p-6">
+        <div className="max-w-2xl w-full bg-white rounded-2xl shadow-2xl border border-gray-200 p-12">
+          <div className="text-center mb-8">
+            <div className="text-8xl mb-6">
+              {accuracy >= 80 ? '🎉' : accuracy >= 60 ? '👍' : '💪'}
+            </div>
+            <h2 className="text-4xl font-black text-gray-900 mb-3">Lesson Complete!</h2>
+            <p className="text-xl text-gray-600">{lesson.title}</p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4 mb-8">
+            <div className="bg-blue-50 rounded-xl p-6 text-center border border-blue-200">
+              <p className="text-base text-gray-600 mb-2">Score</p>
+              <p className="text-4xl font-black text-blue-600">{Math.round(accuracy)}%</p>
+            </div>
+            <div className="bg-green-50 rounded-xl p-6 text-center border border-green-200">
+              <p className="text-base text-gray-600 mb-2">Correct</p>
+              <p className="text-4xl font-black text-green-600">{correctCount}/{lesson.questions.length}</p>
+            </div>
+            <div className="bg-yellow-50 rounded-xl p-6 text-center border border-yellow-200">
+              <p className="text-base text-gray-600 mb-2">XP Earned</p>
+              <p className="text-4xl font-black text-yellow-600">+{xpEarned}</p>
+            </div>
+          </div>
+
+          <div className={`rounded-xl p-6 mb-8 border-2 ${
+            accuracy >= 80
+              ? 'bg-green-50 border-green-300'
+              : accuracy >= 60
+              ? 'bg-blue-50 border-blue-300'
+              : 'bg-orange-50 border-orange-300'
+          }`}>
+            <p className="text-lg font-bold text-gray-900 text-center">
+              {accuracy >= 80
+                ? '🌟 Excellent work! You really understand this topic!'
+                : accuracy >= 60
+                ? "✅ Good job! You're learning well."
+                : '💪 Keep practicing! Review the material and try again.'}
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {nextLessonId ? (
+              <button
+                onClick={() => router.push(`/lesson/${nextLessonId}`)}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl text-xl transition-colors"
+              >
+                Next Lesson →
+              </button>
+            ) : (
+              <button
+                onClick={() => router.push('/learn')}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl text-xl transition-colors"
+              >
+                🎉 All Lessons Complete! →
+              </button>
+            )}
+
+            <button
+              onClick={() => router.push('/learn')}
+              className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-4 rounded-xl text-xl transition-colors"
+            >
+              Back to Learn
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-  const section = sections[sectionIndex];
-  const sectionCompleted = section.lessons.filter((_, i) =>
-    completedLessons.includes(getLessonId(sectionIndex, i))
-  ).length;
+  const currentQuestion = lesson.questions[currentQuestionIndex];
+  const progressPercentage = ((currentQuestionIndex + 1) / lesson.questions.length) * 100;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <img src="/logo.png" alt="ScamSmart" className="w-12 h-12" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">ScamSmart</h1>
-                <p className="text-sm text-gray-600">Learn</p>
-              </div>
-            </div>
+            <button
+              onClick={() => router.push('/learn')}
+              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold text-lg"
+            >
+              ← Exit Lesson
+            </button>
 
-            <nav className="flex items-center gap-6">
-              <button 
-                onClick={() => router.push('/learn')}
-                className="text-lg font-semibold text-blue-600"
-              >
-                📚 Learn
-              </button>
-              <button 
-                onClick={() => router.push('/challenges')}
-                className="text-lg font-semibold text-gray-700 hover:text-gray-900"
-              >
-                🎯 Practice
-              </button>
-              <button 
-                onClick={() => router.push('/leaderboard')}
-                className="text-lg font-semibold text-gray-700 hover:text-gray-900"
-              >
-                🏆 Compete
-              </button>
-              <button 
-                onClick={() => router.push('/profile')}
-                className="text-lg font-semibold text-gray-700 hover:text-gray-900"
-              >
-                👤 Profile
-              </button>
+            <div className="flex items-center gap-6">
+              <div className="text-lg font-bold text-gray-900">
+                Question {currentQuestionIndex + 1} / {lesson.questions.length}
+              </div>
               {!progress?.is_premium && (
-                <button 
-                  onClick={() => router.push('/premium')}
-                  className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold px-4 py-2 rounded-lg text-base"
-                >
-                  ⭐ Upgrade
-                </button>
+                <div className="flex items-center gap-2 bg-red-50 px-4 py-2 rounded-lg border border-red-200">
+                  <span className="text-xl">❤️</span>
+                  <span className="font-bold text-red-600">
+                    {isHeartFree ? '∞' : (progress?.hearts ?? 0)}
+                  </span>
+                </div>
               )}
-              <button 
-                onClick={handleSignOut}
-                className="text-lg font-semibold text-gray-700 hover:text-gray-900"
-              >
-                Sign Out
-              </button>
-            </nav>
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-12">
-        {/* Back Button */}
-        <button
-          onClick={() => router.push('/learn')}
-          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold text-lg mb-8"
-        >
-          ← Back to All Sections
-        </button>
+      <div className="bg-gray-200 h-2">
+        <div
+          className="bg-blue-600 h-2 transition-all duration-300"
+          style={{ width: `${progressPercentage}%` }}
+        ></div>
+      </div>
 
-        {/* Section Header */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
-          <div className="flex items-start gap-6">
-            <div className="text-7xl">{section.emoji}</div>
-            <div className="flex-1">
-              <h2 className="text-4xl font-black text-gray-900 mb-3">
-                {section.title}
-              </h2>
-              <p className="text-xl text-gray-600 mb-6">{section.description}</p>
-              
-              {/* Progress */}
-              <div className="flex items-center gap-4 mb-4">
-                <span className="text-2xl font-bold text-gray-900">
-                  {sectionCompleted} / {section.lessons.length} completed
-                </span>
-                <div className="flex-1 max-w-md bg-gray-200 rounded-full h-4">
-                  <div
-                    className="bg-blue-500 h-4 rounded-full transition-all"
-                    style={{ width: `${(sectionCompleted / section.lessons.length) * 100}%` }}
-                  ></div>
-                </div>
+      <main className="max-w-4xl mx-auto px-6 py-12">
+        {currentQuestionIndex === 0 && (
+          <div className="mb-8 text-center">
+            <div className="text-5xl mb-4">{lesson.sectionEmoji}</div>
+            <h1 className="text-4xl font-black text-gray-900 mb-3">{lesson.title}</h1>
+            <p className="text-xl text-gray-600">{lesson.description}</p>
+            {isHeartFree && (
+              <div className="mt-3 inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-semibold border border-green-200">
+                🎓 Tutorial Lesson — No hearts at risk!
               </div>
-
-              {sectionCompleted === section.lessons.length && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 inline-flex items-center gap-2">
-                  <span className="text-2xl">✅</span>
-                  <span className="text-green-700 font-bold text-lg">Section Complete!</span>
-                </div>
-              )}
-            </div>
+            )}
           </div>
-        </div>
+        )}
 
-        {/* Lessons List */}
-        <div className="space-y-4">
-          <h3 className="text-3xl font-black text-gray-900 mb-6">Lessons</h3>
-          
-          {section.lessons.map((lesson, lessonIndex) => {
-            const lessonId = getLessonId(sectionIndex, lessonIndex);
-            const isCompleted = completedLessons.includes(lessonId);
-            const isUnlocked = isLessonUnlocked(lessonId, completedLessons);
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 mb-6">
+          <h2 className="text-3xl font-bold text-gray-900 mb-8">
+            {currentQuestion.prompt}
+          </h2>
 
-            return (
-              <button
-                key={lessonId}
-                onClick={() => handleLessonClick(lessonId, isUnlocked)}
-                disabled={!isUnlocked}
-                className={`w-full text-left transition-all ${
-                  !isUnlocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:shadow-lg'
-                }`}
-              >
-                <div className={`bg-white rounded-xl shadow-sm border-2 p-6 ${
-                  isCompleted
-                    ? 'border-green-500'
-                    : isUnlocked
-                    ? 'border-blue-500 hover:border-blue-600'
-                    : 'border-gray-300'
-                }`}>
+          <div className="space-y-4">
+            {currentQuestion.options.map((option, index) => {
+              const isSelected = selectedAnswer === index;
+              const isCorrect = index === currentQuestion.correct;
+              const showCorrect = showResult && isCorrect;
+              const showWrong = showResult && isSelected && !isCorrect;
+
+              return (
+                <button
+                  key={index}
+                  onClick={() => handleAnswerSelect(index)}
+                  disabled={showResult}
+                  className={`w-full text-left p-6 rounded-xl border-2 transition-all text-lg font-semibold ${
+                    showCorrect
+                      ? 'bg-green-50 border-green-500 text-gray-900'
+                      : showWrong
+                      ? 'bg-red-50 border-red-500 text-gray-900'
+                      : isSelected
+                      ? 'bg-blue-50 border-blue-500 text-gray-900'
+                      : 'bg-white border-gray-300 hover:border-blue-400 hover:bg-blue-50 text-gray-900'
+                  } ${showResult ? 'cursor-default' : 'cursor-pointer'}`}
+                >
                   <div className="flex items-center justify-between">
-                    {/* Lesson Info */}
-                    <div className="flex items-start gap-4 flex-1">
-                      {/* Status Icon */}
-                      <div className="text-4xl flex-shrink-0 mt-1">
-                        {isCompleted ? '✅' : isUnlocked ? '📖' : '🔒'}
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-bold">
-                            Lesson {lessonIndex + 1}
-                          </span>
-                          {isCompleted && (
-                            <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold">
-                              ✓ Completed
-                            </span>
-                          )}
-                          {!isUnlocked && (
-                            <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm font-bold">
-                              🔒 Locked
-                            </span>
-                          )}
-                        </div>
-
-                        <h4 className="text-2xl font-bold text-gray-900 mb-2">
-                          {lesson.title}
-                        </h4>
-                        
-                        <p className="text-lg text-gray-600 mb-3">
-                          {lesson.description}
-                        </p>
-
-                        {/* Meta Info */}
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <span>⭐ {lesson.xp || 100} XP</span>
-                          <span>•</span>
-                          <span>📝 {lesson.questions?.length || 5} Questions</span>
-                          {lesson.difficulty && (
-                            <>
-                              <span>•</span>
-                              <span className="capitalize">{lesson.difficulty}</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Action Button */}
-                    {isUnlocked && (
-                      <div className="ml-4 flex-shrink-0">
-                        <div className={`px-6 py-3 rounded-lg font-bold text-lg ${
-                          isCompleted
-                            ? 'bg-green-50 text-green-700'
-                            : 'bg-blue-600 text-white'
-                        }`}>
-                          {isCompleted ? 'Review' : 'Start'} →
-                        </div>
-                      </div>
-                    )}
+                    <span className="flex-1">{option}</span>
+                    {showCorrect && <span className="text-3xl ml-4">✅</span>}
+                    {showWrong && <span className="text-3xl ml-4">❌</span>}
                   </div>
+                </button>
+              );
+            })}
+          </div>
 
-                  {/* Locked Message */}
-                  {!isUnlocked && (
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <p className="text-gray-600 text-base">
-                        Complete the previous lesson to unlock this one
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Navigation Buttons */}
-        <div className="flex gap-4 mt-12">
-          <button
-            onClick={() => router.push('/learn')}
-            className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold px-6 py-4 rounded-xl text-lg transition-colors"
-          >
-            ← Back to All Sections
-          </button>
-          
-          {sectionIndex < sections.length - 1 && (
-            <button
-              onClick={() => router.push(`/section/${sections[sectionIndex + 1].id}`)}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-4 rounded-xl text-lg transition-colors"
-            >
-              Next Section: {sections[sectionIndex + 1].title} →
-            </button>
+          {showResult && (
+            <div className={`mt-6 p-6 rounded-xl border-2 ${
+              selectedAnswer === currentQuestion.correct
+                ? 'bg-green-50 border-green-300'
+                : 'bg-red-50 border-red-300'
+            }`}>
+              <p className="text-lg font-bold text-gray-900 mb-2">
+                {selectedAnswer === currentQuestion.correct ? '✅ Correct!' : '❌ Incorrect'}
+              </p>
+              <p className="text-base text-gray-700">
+                {currentQuestion.explanation}
+              </p>
+            </div>
           )}
         </div>
+
+        {!showResult && (
+          <button
+            onClick={handleSubmitAnswer}
+            disabled={selectedAnswer === null}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold py-5 rounded-xl text-2xl transition-colors disabled:cursor-not-allowed"
+          >
+            Submit Answer
+          </button>
+        )}
+
+        {showResult && (
+          <div className="text-center">
+            <p className="text-gray-600 text-lg">
+              {currentQuestionIndex < lesson.questions.length - 1
+                ? 'Next question in 3 seconds...'
+                : 'Completing lesson...'}
+            </p>
+          </div>
+        )}
       </main>
     </div>
   );
